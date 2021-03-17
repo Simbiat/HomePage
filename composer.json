@@ -1,0 +1,29 @@
+{
+    "name": "simbiat/homepage",
+    "type": "library",
+    "keywords": ["home","php","page"],
+    "description": "Functions driving main page of https://simbiat.ru",
+    "homepage": "https://github.com/Simbiat/homepage",
+    "license": "AGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Dmitry Kustov",
+            "email": "simbiat@outlook.com",
+            "homepage": "https://simbiat.ru",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8",
+        "simbiat/database": "^2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Simbiat\\": "src/"
+        }
+    },
+	"support": {
+		"issues": "https://github.com/Simbiat/homepage/issues",
+		"source": "https://github.com/Simbiat/homepage"
+	}
+}
