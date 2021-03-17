@@ -4,7 +4,7 @@ namespace Simbiat;
 
 class HomePage
 {
-    public function __construct(bool $displayErrors = false)
+    public function __construct(bool $PROD = false)
     {
         #Set output compression to 9 for consistency
         ini_set('zlib.output_compression_level', '9');
@@ -12,12 +12,14 @@ class HomePage
         ini_set('date.timezone', 'UTC');
         date_default_timezone_set('UTC');
         #Enable/disable display of errors
-        ini_set('display_errors', strval(intval($displayErrors)));
-        ini_set('display_startup_errors', strval(intval($displayErrors)));
+        ini_set('display_errors', strval(intval(!$PROD)));
+        ini_set('display_startup_errors', strval(intval(!$PROD)));
         #Set path to error log
         ini_set('error_log', getcwd().'/error.log');
         #Force HTTPS
         $this->forceSecure();
+        #Force WWW
+        $this->forceWWW();
         #Trim URI
         $this->trimURI();
     }
@@ -36,6 +38,15 @@ class HomePage
             ) {
             #Redirect to HTTPS, while keeping the port, in case it's not standard
             (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($port !== 433 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
+        }
+    }
+    
+    #Functino to force www version of the website, unless on subdomain
+    private function forceWWW(int $port = 433): void
+    {
+        if (preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1) {
+            #Redirect to www version
+            (new \Simbiat\http20\Headers)->redirect('https://'.'www.'.$_SERVER['HTTP_HOST'].($port !== 433 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
         }
     }
     
