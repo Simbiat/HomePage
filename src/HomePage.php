@@ -84,6 +84,8 @@ class HomePage
     {
         #Remove query string, if present (that is everything after ?)
         $request = preg_replace('/^(.*)(\?.*)$/', '', $request);
+        #Send headers
+        $this->commonHeaders();
         if (preg_match('/browserconfig\.xml/i', $request) === 1) {
             #Process MS Tile
             (new \Simbiat\http20\Meta)->msTile($GLOBALS['siteconfig']['mstile'], [], [], true, true);
@@ -121,6 +123,12 @@ class HomePage
         }
         #We did not hit any other potential files, so return 0
         return 0;
+    }
+    
+    #Function to send headers common for all items
+    public function commonHeaders(): void
+    {
+        (new \Simbiat\http20\Headers)->performance()->secFetch()->security('strict', [], [], [], [], $GLOBALS['siteconfig']['allowedDirectives'], false)->features(['web-share'=>'\'self\'']);
     }
 }
 ?>
