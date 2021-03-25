@@ -9,6 +9,8 @@ class HomePage
     public static bool $PROD = false;
     #Allow access to canonical value of the host
     public static string $canonical = '';
+    #Track if DB connection is up
+    public static bool $dbup = false;
     
     public function __construct(bool $PROD = false)
     {
@@ -114,10 +116,9 @@ class HomePage
             (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
         } elseif (is_file($GLOBALS['siteconfig']['maindir'].$request)) {
             #Attempt to send the file
-            if (preg_match('/^.*('.implode('|', $GLOBALS['siteconfig']['prohibited']).').*$/i', $request) === 0) {
-                return (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['maindir'].$request, allowedMime: $GLOBALS['siteconfig']['allowedMime'], exit: false);
+            if (preg_match('/^('.implode('|', $GLOBALS['siteconfig']['prohibited']).').*$/i', $request) === 0) {
+                return (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['maindir'].$request, allowedMime: $GLOBALS['siteconfig']['allowedMime'], exit: true);
             } else {
-                (new \Simbiat\http20\Headers)->clientReturn('403', false);
                 return 403;
             }
         }
@@ -129,6 +130,134 @@ class HomePage
     public function commonHeaders(): void
     {
         (new \Simbiat\http20\Headers)->performance()->secFetch()->security('strict', [], [], [], [], $GLOBALS['siteconfig']['allowedDirectives'], false)->features(['web-share'=>'\'self\'']);
+    }
+    
+    #Function to send common Link headers
+    public function commonLinks(): void
+    {
+        #Update list with dynamic values
+        $GLOBALS['siteconfig']['links'] = array_merge($GLOBALS['siteconfig']['links'], [
+            ['rel' => 'canonical', 'href' => 'https://'.(preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1 ? 'www.' : '').$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').$_SERVER['REQUEST_URI']],
+            ['rel' => 'stylesheet preload', 'href' => '/frontend/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*').'/css.css', 'as' => 'style'],
+            ['rel' => 'preload', 'href' => '/frontend/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*').'/js.js', 'as' => 'script'],
+        ]);
+        #Send headers
+        (new \Simbiat\http20\Headers)->links($GLOBALS['siteconfig']['links']);
+    }
+    
+    #Database connection
+    public function dbConnect(): bool
+    {
+        #Check in case we accidentally call this for 2nd time
+        if (self::$dbup) {
+            return true;
+        } else {
+            try {
+                (new \Simbiat\Database\Pool)->openConnection((new \Simbiat\Database\Config)->setUser($GLOBALS['siteconfig']['database']['user'])->setPassword($GLOBALS['siteconfig']['database']['password'])->setDB($GLOBALS['siteconfig']['database']['dbname'])->setOption(\PDO::MYSQL_ATTR_FOUND_ROWS, true)->setOption(\PDO::MYSQL_ATTR_INIT_COMMAND, $GLOBALS['siteconfig']['database']['settings']));
+                self::$dbup = true;
+                #Check if maintenance
+                if ((new \Simbiat\Database\Controller)->selectValue('SELECT `value` FROM `sys__settings` WHERE `setting`=\'maintenance\'') == 1) {
+                    $this->twigProc(error: 5032);
+                }
+                #Check if banned
+                if ((new \Simbiat\Common\Security)->banedipcheck() === true) {
+                    $this->twigProc(error: 403);
+                }
+                return true;
+            } catch (Exception $e) {
+                self::$dbup = false;
+                return false;
+            }
+        }
+    }
+    
+    #Twig processing of the generated page
+    public function twigProc(array $extraVars = [], ?int $error = NULL, string $cacheStrat = '')
+    {
+        #Set Twig loader
+        $twigloader = new \Twig\Loader\FilesystemLoader($GLOBALS['siteconfig']['templatesdir']);
+        #Initiate Twig itself (use caching only for PROD environment)
+        $twig = new \Twig\Environment($twigloader, ['cache' => (self::$PROD ? $GLOBALS['siteconfig']['cachedir'].'/twig' : false)]);
+        #Set default variables
+        $twigVars = [
+            'domain' => $GLOBALS['siteconfig']['domain'],
+            'url' => $GLOBALS['siteconfig']['domain'].$_SERVER['REQUEST_URI'],
+            'site_name' => $GLOBALS['siteconfig']['site_name'],
+            'ogdesc' => $GLOBALS['siteconfig']['ogdesc'],
+            'keywords' => $GLOBALS['siteconfig']['keywords'],
+            'ogextra' => $GLOBALS['siteconfig']['ogextra'],
+            'ogimage' => $GLOBALS['siteconfig']['ogimage'],
+            'currentyear' => '-'.date('Y', time()),
+        ];
+        #Set versions of CSS and JS
+        $twigVars['css_version'] = $this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*');
+        $twigVars['js_version'] = $this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*');
+        #Set link tags
+        $twigVars['link_tags'] = (new \Simbiat\http20\Headers)->links($GLOBALS['siteconfig']['links'], 'head');
+        if (self::$dbup) {
+            #Update default variables with values from database
+            $twigVars = array_merge($twigVars, (new \Simbiat\Database\Controller)->selectPair('SELECT `setting`, `value` FROM `sys__settings`'));
+            #Get sidebar
+            $twigVars['sidebar']['fflinks'] = (new \Simbiat\Database\Controller)->selectAll(
+                'SELECT `characters`.* FROM (SELECT `characterid` as `id`, \'character\' as `type`, `name`, `updated`, `registered` FROM `ff__character` ORDER BY `updated` DESC LIMIT 25) `characters`
+                UNION ALL
+                    SELECT `freecompnies`.* FROM (SELECT `freecompanyid` as `id`, \'freecompany\' as `type`, `name`, `updated`, `registered` FROM `ff__freecompany` ORDER BY `updated` DESC LIMIT 25) `freecompnies`
+                UNION ALL
+                    SELECT `linkshells`.* FROM (SELECT `linkshellid` as `id`, \'linkshell\' as `type`, `name`, `updated`, `registered` FROM `ff__linkshell` ORDER BY `updated` DESC LIMIT 25) `linkshells`
+                UNION ALL
+                    SELECT `pvpteams`.* FROM (SELECT `pvpteamid` as `id`, \'pvpteam\' as `type`, `name`, `updated`, `registered` FROM `ff__pvpteam` ORDER BY `updated` DESC LIMIT 25) `pvpteams`
+                ORDER BY `updated` DESC LIMIT 25'
+            );
+        } else {
+            #Enforce 503 error
+            $error = 503;
+        }
+        #Set title if it's empty
+        if (empty($twigVars['title'])) {
+            $twigVars['title'] = $twigVars['site_name'];
+        }
+        #Set title if it's empty
+        if (empty($twigVars['h1'])) {
+            $twigVars['h1'] = $twigVars['title'];
+        }
+        #Set error for Twig
+        if (!empty($error)) {
+            #Server error page
+            $twigVars['http_error'] = $error;
+            $twigVars['title'] .= ': '.($error === 5032 ? 'Maintenance' : strval($error));
+            $twigVars['h1'] = $twigVars['title'];
+            (new \Simbiat\http20\Headers)->clientReturn(($error === 5032 ? '503' : strval($error)), false);
+        }
+        #Merge with extra variables provided
+        $twigVars = array_merge($twigVars, $extraVars);
+        #Add metatags
+        $this->socialMeta($twigVars);
+        #Render page
+        $output = $twig->render('main/main.html', $twigVars);
+        (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
+        exit;
+    }
+    
+    #Function to generate social media metas
+    private function socialMeta(&$twigVars): void
+    {
+        #Cache object
+        $meta = (new \Simbiat\http20\Meta);
+        #Twitter
+        $twigVars['twitter_card'] = $meta->twitter([
+            'title' => (empty($twigVars['title']) ? 'Simbiat Software' : $twigVars['title']),
+            'description' => (empty($twigVars['ogdesc']) ? 'Simbiat Software' : $twigVars['ogdesc']),
+            'site' => 'simbiat199',
+            'site:id' => '3049604752',
+            'creator' => '@simbiat199',
+            'creator:id' => '3049604752',
+            'image' => $twigVars['domain'].'/frontend/images/favicons/simbiat.png',
+            'image:alt' => 'Simbiat Software logo',
+        ], [], false);
+        #Facebook
+        $twigVars['facebook'] = $meta->facebook(288606374482851, [100002283569233]);
+        #MS Tile (for pinned sites)
+        $twigVars['ms_tile'] = $meta->msTile($GLOBALS['siteconfig']['mstile'], [], [], false, false);
     }
 }
 ?>
