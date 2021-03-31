@@ -190,10 +190,6 @@ class HomePage
             'domain' => $GLOBALS['siteconfig']['domain'],
             'url' => $GLOBALS['siteconfig']['domain'].$_SERVER['REQUEST_URI'],
             'site_name' => $GLOBALS['siteconfig']['site_name'],
-            'ogdesc' => $GLOBALS['siteconfig']['ogdesc'],
-            'keywords' => $GLOBALS['siteconfig']['keywords'],
-            'ogextra' => $GLOBALS['siteconfig']['ogextra'],
-            'ogimage' => $GLOBALS['siteconfig']['ogimage'],
             'currentyear' => '-'.date('Y', time()),
         ];
         #Set versions of CSS and JS
@@ -222,10 +218,28 @@ class HomePage
         #Set title if it's empty
         if (empty($twigVars['title'])) {
             $twigVars['title'] = $twigVars['site_name'];
+        } else {
+            $twigVars['title'] = $twigVars['title'].' on '.$twigVars['site_name'];
         }
         #Set title if it's empty
         if (empty($twigVars['h1'])) {
             $twigVars['h1'] = $twigVars['title'];
+        }
+        #Concat keywords
+        if (empty($twigVars['keywords'])) {
+            $twigVars['keywords'] = $GLOBALS['siteconfig']['keywords'];
+        } else {
+            $twigVars['keywords'] = $GLOBALS['siteconfig']['keywords'].', '.$twigVars['keywords'];
+        }
+        #Set OG values to global ones, if empty
+        if (empty($twigVars['ogdesc'])) {
+            $twigVars['ogdesc'] = $GLOBALS['siteconfig']['ogdesc'];
+        }
+        if (empty($twigVars['ogextra'])) {
+            $twigVars['ogextra'] = $GLOBALS['siteconfig']['ogextra'];
+        }
+        if (empty($twigVars['ogimage'])) {
+            $twigVars['ogimage'] = $GLOBALS['siteconfig']['ogimage'];
         }
         #Set error for Twig
         if (!empty($error)) {
