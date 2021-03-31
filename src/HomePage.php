@@ -137,7 +137,7 @@ class HomePage
     {
         #Update list with dynamic values
         $GLOBALS['siteconfig']['links'] = array_merge($GLOBALS['siteconfig']['links'], [
-            ['rel' => 'canonical', 'href' => 'https://'.(preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1 ? 'www.' : '').$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').$_SERVER['REQUEST_URI']],
+            ['rel' => 'canonical', 'href' => 'https://'.(preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1 ? 'www.' : '').$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.$_SERVER['REQUEST_URI']],
             ['rel' => 'stylesheet preload', 'href' => '/frontend/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*').'/css.css', 'as' => 'style'],
             ['rel' => 'preload', 'href' => '/frontend/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*').'/js.js', 'as' => 'script'],
         ]);
