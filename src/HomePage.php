@@ -11,6 +11,8 @@ class HomePage
     public static string $canonical = '';
     #Track if DB connection is up
     public static bool $dbup = false;
+    #HTMLCache object
+    public static ?\Simbiat\HTMLCache $HTMLCache = NULL;
     
     public function __construct(bool $PROD = false)
     {
@@ -121,8 +123,13 @@ class HomePage
             } else {
                 return 403;
             }
+        } else {
+            #Create HTMLCache object to check for cache
+            self::$HTMLCache = (new \Simbiat\HTMLCache($GLOBALS['siteconfig']['cachedir'].'html/'));
+            #Attempt to use cache
+            self::$HTMLCache->get('', true, true);
         }
-        #We did not hit any other potential files, so return 0
+        #Return 0, since we did not hit anything
         return 0;
     }
     
@@ -234,7 +241,12 @@ class HomePage
         $this->socialMeta($twigVars);
         #Render page
         $output = $twig->render('main/main.html', $twigVars);
-        (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
+        #Cache page if cache age is setup
+        if (self::$PROD && !empty($twigVars['cache_age'])) {
+            self::$HTMLCache->set($output, '', $twigVars['cache_age'], 600, true, true);
+        } else {
+            (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
+        }
         exit;
     }
     

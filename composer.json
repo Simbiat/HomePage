@@ -16,7 +16,9 @@
     "require": {
         "php": "^8",
         "simbiat/database": "^2",
-        "simbiat/http20": "^1.1"
+        "simbiat/http20": "^1.1",
+        "simbiat/htmlcache": "^1",
+        "simbiat/fftracker": "*"
     },
     "autoload": {
         "psr-4": {
