@@ -215,6 +215,16 @@ class HomePage
             #Enforce 503 error
             $error = 503;
         }
+        #Set error for Twig
+        if (!empty($error)) {
+            #Server error page
+            $twigVars['http_error'] = $error;
+            $twigVars['title'] .= ': '.($error === 5032 ? 'Maintenance' : strval($error));
+            $twigVars['h1'] = $twigVars['title'];
+            (new \Simbiat\http20\Headers)->clientReturn(($error === 5032 ? '503' : strval($error)), false);
+        }
+        #Merge with extra variables provided
+        $twigVars = array_merge($twigVars, $extraVars);
         #Set title if it's empty
         if (empty($twigVars['title'])) {
             $twigVars['title'] = $twigVars['site_name'];
@@ -241,16 +251,6 @@ class HomePage
         if (empty($twigVars['ogimage'])) {
             $twigVars['ogimage'] = $GLOBALS['siteconfig']['ogimage'];
         }
-        #Set error for Twig
-        if (!empty($error)) {
-            #Server error page
-            $twigVars['http_error'] = $error;
-            $twigVars['title'] .= ': '.($error === 5032 ? 'Maintenance' : strval($error));
-            $twigVars['h1'] = $twigVars['title'];
-            (new \Simbiat\http20\Headers)->clientReturn(($error === 5032 ? '503' : strval($error)), false);
-        }
-        #Merge with extra variables provided
-        $twigVars = array_merge($twigVars, $extraVars);
         #Add metatags
         $this->socialMeta($twigVars);
         #Render page
