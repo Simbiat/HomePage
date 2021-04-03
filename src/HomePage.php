@@ -256,8 +256,8 @@ class HomePage
         #Render page
         $output = $twig->render('main/main.html', $twigVars);
         #Cache page if cache age is setup
-        if (self::$PROD && !empty($twigVars['cache_age'])) {
-            self::$HTMLCache->set($output, '', $twigVars['cache_age'], 600, true, true);
+        if (self::$PROD && !empty($twigVars['cache_age']) && is_numeric($twigVars['cache_age'])) {
+            self::$HTMLCache->set($output, '', intval($twigVars['cache_age']), 600, true, true);
         } else {
             (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
         }
