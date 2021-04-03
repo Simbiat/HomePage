@@ -235,12 +235,6 @@ class HomePage
         if (empty($twigVars['h1'])) {
             $twigVars['h1'] = $twigVars['title'];
         }
-        #Concat keywords
-        if (empty($twigVars['keywords'])) {
-            $twigVars['keywords'] = $GLOBALS['siteconfig']['keywords'];
-        } else {
-            $twigVars['keywords'] = $GLOBALS['siteconfig']['keywords'].', '.$twigVars['keywords'];
-        }
         #Set OG values to global ones, if empty
         if (empty($twigVars['ogdesc'])) {
             $twigVars['ogdesc'] = $GLOBALS['siteconfig']['ogdesc'];
@@ -251,6 +245,8 @@ class HomePage
         if (empty($twigVars['ogimage'])) {
             $twigVars['ogimage'] = $GLOBALS['siteconfig']['ogimage'];
         }
+        #Limit Ogdesc to 120 characters
+        $twigVars['ogdesc'] = mb_substr($twigVars['ogdesc'], 0, 120, 'UTF-8');
         #Add metatags
         $this->socialMeta($twigVars);
         #Render page
