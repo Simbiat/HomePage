@@ -64,7 +64,7 @@ class HomePage
     {
         if (preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1) {
             #Redirect to www version
-            (new \Simbiat\http20\Headers)->redirect('https://'.'www.'.$_SERVER['HTTP_HOST'].($port !== 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
+            (new \Simbiat\http20\Headers)->redirect('https://'.'www.'.$_SERVER['HTTP_HOST'].($port != 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
         }
     }
     
@@ -117,7 +117,7 @@ class HomePage
             #Process favicon
             (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
         } elseif (preg_match('/^(bic)($|\/.*)/i', $request) === 1) {
-            (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] !== 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.(preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
+            (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.(preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
         } elseif (is_file($GLOBALS['siteconfig']['maindir'].$request)) {
             #Attempt to send the file
             if (preg_match('/^('.implode('|', $GLOBALS['siteconfig']['prohibited']).').*$/i', $request) === 0) {
