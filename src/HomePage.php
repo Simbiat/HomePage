@@ -87,35 +87,37 @@ class HomePage
     public function filesRequests(string $request): int
     {
         #Remove query string, if present (that is everything after ?)
-        $request = preg_replace('/^(.*)(\?.*)$/', '', $request);
+        $request = preg_replace('/^(.*)(\?.*)?$/', '$1', $request);
         #Send headers
         $this->commonHeaders();
-        if (preg_match('/browserconfig\.xml/i', $request) === 1) {
+        if (preg_match('/^browserconfig\.xml$/i', $request) === 1) {
             #Process MS Tile
             (new \Simbiat\http20\Meta)->msTile($GLOBALS['siteconfig']['mstile'], [], [], true, true);
-        } elseif (preg_match('/frontend\/js\/\d+\/js\.js/i', $request) === 1) {
+        } elseif (preg_match('/^frontend\/js\/\d+\/js\.js$/i', $request) === 1) {
             #Process JS
             (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['jsdir'], 'js', false, '', 'aggressive');
-        } elseif (preg_match('/frontend\/css\/\d+\/css\.css/i', $request) === 1) {
+        } elseif (preg_match('/^frontend\/css\/\d+\/css\.css$/i', $request) === 1) {
             #Process CSS
             (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['cssdir'], 'css', true, '', 'aggressive');
-        } elseif (preg_match('/frontend\/images\/fftracker\/.*/i', $request) === 1) {
+        } elseif (preg_match('/^frontend\/images\/fftracker\/.*$/i', $request) === 1) {
             #Process FFTracker images
             #Get real path
-            if (preg_match('/(frontend\/images\/fftracker\/avatar\/)(.+)/i', $request) === 1) {
-                $imgpath = preg_replace('/(frontend\/images\/fftracker\/avatar\/)(.+)/i', 'https://img2.finalfantasyxiv.com/f/$2', $request);
+            if (preg_match('/^(frontend\/images\/fftracker\/avatar\/)(.+)$/i', $request) === 1) {
+                $imgpath = preg_replace('/^(frontend\/images\/fftracker\/avatar\/)(.+)/i', 'https://img2.finalfantasyxiv.com/f/$2', $request);
                 (new \Simbiat\http20\Sharing)->proxyFile($imgpath, 'week');
-            } elseif (preg_match('/(frontend\/images\/fftracker\/icon\/)(.+)/i', $request) === 1) {
-                $imgpath = preg_replace('/(frontend\/images\/fftracker\/icon\/)(.+)/i', 'https://img.finalfantasyxiv.com/lds/pc/global/images/itemicon/$2', $request);
+            } elseif (preg_match('/^(frontend\/images\/fftracker\/icon\/)(.+)$/i', $request) === 1) {
+                $imgpath = preg_replace('/^(frontend\/images\/fftracker\/icon\/)(.+)/i', 'https://img.finalfantasyxiv.com/lds/pc/global/images/itemicon/$2', $request);
                 (new \Simbiat\http20\Sharing)->proxyFile($imgpath, 'week');
             } else {
-                $imgpath = (new \Simbiat\FFTracker)->ImageShow(preg_replace('/frontend\/images\/fftracker\//i', '', $request));
+                $imgpath = (new \Simbiat\FFTracker)->ImageShow(preg_replace('/^frontend\/images\/fftracker\//i', '', $request));
                 #Output the image
                 (new \Simbiat\http20\Sharing)->fileEcho($imgpath);
             }
-        } elseif (preg_match('/favicon\.ico/i', $request) === 1) {
+        } elseif (preg_match('/^favicon\.ico$/i', $request) === 1) {
             #Process favicon
             (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
+        } elseif (preg_match('/^(bic)($|\/.*)/i', $request) === 1) {
+            (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] !== 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.(preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
         } elseif (is_file($GLOBALS['siteconfig']['maindir'].$request)) {
             #Attempt to send the file
             if (preg_match('/^('.implode('|', $GLOBALS['siteconfig']['prohibited']).').*$/i', $request) === 0) {
