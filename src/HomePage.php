@@ -219,7 +219,7 @@ class HomePage
         if (!empty($error)) {
             #Server error page
             $twigVars['http_error'] = $error;
-            $twigVars['title'] .= ': '.($error === 5032 ? 'Maintenance' : strval($error));
+            $twigVars['title'] = $twigVars['site_name'].': '.($error === 5032 ? 'Maintenance' : strval($error));
             $twigVars['h1'] = $twigVars['title'];
             (new \Simbiat\http20\Headers)->clientReturn(($error === 5032 ? '503' : strval($error)), false);
         }
