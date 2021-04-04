@@ -138,7 +138,7 @@ class HomePage
     #Function to send headers common for all items
     public function commonHeaders(): void
     {
-        (new \Simbiat\http20\Headers)->performance()->secFetch()->security('strict', [], [], [], [], $GLOBALS['siteconfig']['allowedDirectives'], false)->features(['web-share'=>'\'self\'']);
+        (new \Simbiat\http20\Headers)->performance()->secFetch()->security('strict', [], [], [], ['GET', 'HEAD'], $GLOBALS['siteconfig']['allowedDirectives'], false)->features(['web-share'=>'\'self\'']);
     }
     
     #Function to send common Link headers
