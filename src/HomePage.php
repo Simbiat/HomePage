@@ -88,8 +88,6 @@ class HomePage
     {
         #Remove query string, if present (that is everything after ?)
         $request = preg_replace('/^(.*)(\?.*)?$/', '$1', $request);
-        #Send headers
-        $this->commonHeaders();
         if (preg_match('/^browserconfig\.xml$/i', $request) === 1) {
             #Process MS Tile
             (new \Simbiat\http20\Meta)->msTile($GLOBALS['siteconfig']['mstile'], [], [], true, true);
