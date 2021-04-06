@@ -22,24 +22,31 @@ class HomeFeeds
     #Generate sitemap
     private function sitemap(array $uri): array
     {
+        #Cache Headers object
+        $headers = (new \Simbiat\http20\Headers);
         #Check that not empty
         if (empty($uri)) {
             #Redirect to HTML index
-            (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/html/index', true, true, false);
+            $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/html/index', true, true, false);
         } else {
-            #Check for Accept header
-            
             #Check that format was provided
             if (empty($uri[0])) {
-                #Redirect to HTML index
-                (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/html/index', true, true, false);
+                #Check for Accept header
+                $format = $headers->notAccept(['application/xml', 'text/plain', 'text/html']);
+                $format = match($format) {
+                    'application/xml' => 'xml',
+                    'text/plain' => 'txt',
+                    'text/html' => 'html',
+                };
+                #Redirect to index page based on accepteable headers
+                $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/'.$format.'/index', true, true, false);
             } else {
                 $uri[0] = strtolower($uri[0]);
                 if (in_array($uri[0], ['html', 'xml', 'txt'])) {
                     #Check if initial page was provided
                     if (empty($uri[1])) {
                         #Redirect to index
-                        (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/'.$uri[0].'/index', true, true, false);
+                        $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/'.$uri[0].'/index', true, true, false);
                     } else {
                         $uri[1] = strtolower($uri[1]);
                         #Set base URL
@@ -71,7 +78,7 @@ class HomeFeeds
                         } else {
                             if (empty($uri[2])) {
                                 #Redirect to 1st page
-                                (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/'.$uri[0].'/'.$uri[1].'/1', true, true, false);
+                                $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/'.$uri[0].'/'.$uri[1].'/1', true, true, false);
                             } else {
                                 if (is_numeric($uri[2])) {
                                     #Get links
