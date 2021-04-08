@@ -55,7 +55,7 @@ class HomeApi
             $data = (new \Simbiat\FFTracker)->Update(rawurldecode($uri[1]), '');
         } else {
             #Get data
-            $data = (new \Simbiat\FFTracker)->TrackerGrab(rawurldecode($uri[0], $uri[1]));
+            $data = (new \Simbiat\FFTracker)->TrackerGrab($uri[0], rawurldecode($uri[1]));
             #Check if empty
             if (empty($data)) {
                 $this->apiEcho(httpCode: '404');
