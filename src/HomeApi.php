@@ -18,6 +18,11 @@ class HomeApi
             case 'fftracker':
                 $data = $this->ffTracker(array_slice($uri, 1));
                 break;
+            case 'cron':
+                (new \Simbiat\HomePage)->dbConnect();
+                (new \Simbiat\Cron)->process();
+                exit;
+                break;
             default:
                 #Not supported (yet)
                 $this->apiEcho(httpCode: '404');
