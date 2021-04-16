@@ -20,7 +20,7 @@ class HomeApi
                 break;
             case 'cron':
                 (new \Simbiat\HomePage)->dbConnect();
-                (new \Simbiat\Cron)->process();
+                (new \Simbiat\Cron)->process(1);
                 exit;
                 break;
             default:
@@ -57,7 +57,7 @@ class HomeApi
             $this->apiEcho(httpCode: '503');
         }
         if ($uri[0] === 'register') {
-            $data = (new \Simbiat\FFTracker)->Update(rawurldecode($uri[1]), '');
+            $data = (new \Simbiat\FFTracker)->Update('', rawurldecode($uri[1]));
         } else {
             #Get data
             $data = (new \Simbiat\FFTracker)->TrackerGrab($uri[0], rawurldecode($uri[1]));
