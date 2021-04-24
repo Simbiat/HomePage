@@ -13,6 +13,8 @@ class HomePage
     public static bool $dbup = false;
     #HTMLCache object
     public static ?\Simbiat\HTMLCache $HTMLCache = NULL;
+    #HTTP headers object
+    public static ?\Simbiat\http20\Headers $headers = NULL;
     
     public function __construct(bool $PROD = false)
     {
@@ -28,6 +30,8 @@ class HomePage
         #Enable/disable display of errors
         ini_set('display_errors', strval(intval(!self::$PROD)));
         ini_set('display_startup_errors', strval(intval(!self::$PROD)));
+        #Cache headers object
+        self::$headers = new \Simbiat\http20\Headers;
     }
     
     public function canonical(): void
@@ -55,7 +59,7 @@ class HomePage
                 (empty($_SERVER['HTTP_FRONT_END_HTTPS']) || $_SERVER['HTTP_FRONT_END_HTTPS'] === 'off')
             ) {
             #Redirect to HTTPS, while keeping the port, in case it's not standard
-            (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($port !== 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
+            self::$headers->redirect('https://'.$_SERVER['HTTP_HOST'].($port !== 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
         }
     }
     
@@ -64,7 +68,7 @@ class HomePage
     {
         if (preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1) {
             #Redirect to www version
-            (new \Simbiat\http20\Headers)->redirect('https://'.'www.'.$_SERVER['HTTP_HOST'].($port != 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
+            self::$headers->redirect('https://'.'www.'.$_SERVER['HTTP_HOST'].($port != 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
         }
     }
     
@@ -91,10 +95,10 @@ class HomePage
         if (preg_match('/^browserconfig\.xml$/i', $request) === 1) {
             #Process MS Tile
             (new \Simbiat\http20\Meta)->msTile($GLOBALS['siteconfig']['mstile'], [], [], true, true);
-        } elseif (preg_match('/^frontend\/js\/\d+\/js\.js$/i', $request) === 1) {
+        } elseif (preg_match('/^frontend\/js\/\d+\.js$/i', $request) === 1) {
             #Process JS
             (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['jsdir'], 'js', false, '', 'aggressive');
-        } elseif (preg_match('/^frontend\/css\/\d+\/css\.css$/i', $request) === 1) {
+        } elseif (preg_match('/^frontend\/css\/\d+\.css$/i', $request) === 1) {
             #Process CSS
             (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['cssdir'], 'css', true, '', 'aggressive');
         } elseif (preg_match('/^frontend\/images\/fftracker\/.*$/i', $request) === 1) {
@@ -111,11 +115,11 @@ class HomePage
                 #Output the image
                 (new \Simbiat\http20\Sharing)->fileEcho($imgpath);
             }
-        } elseif (preg_match('/^favicon\.ico$/i', $request) === 1) {
+        } elseif (preg_match('/^(favicon\.ico)|(frontend\/images\/favicons\/favicon\.ico)$/i', $request) === 1) {
             #Process favicon
             (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
         } elseif (preg_match('/^(bic)($|\/.*)/i', $request) === 1) {
-            (new \Simbiat\http20\Headers)->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.(preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
+            self::$headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.(preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
         } elseif (is_file($GLOBALS['siteconfig']['maindir'].$request)) {
             #Attempt to send the file
             if (preg_match('/^('.implode('|', $GLOBALS['siteconfig']['prohibited']).').*$/i', $request) === 0) {
@@ -136,7 +140,13 @@ class HomePage
     #Function to send headers common for all items
     public function commonHeaders(): void
     {
-        (new \Simbiat\http20\Headers)->performance()->secFetch()->security('strict', [], [], [], ['GET', 'HEAD'], $GLOBALS['siteconfig']['allowedDirectives'], false)->features(['web-share'=>'\'self\'']);
+        self::$headers->performance()->secFetch()->security('strict', [], [], [], ['GET', 'HEAD']);
+    }
+    
+    #Function to send HTML only headers
+    public function htmlHeaders(): void
+    {
+        self::$headers->features(['web-share'=>'\'self\''])->contentPolicy($GLOBALS['siteconfig']['allowedDirectives'], false);
     }
     
     #Function to send common Link headers
@@ -145,11 +155,11 @@ class HomePage
         #Update list with dynamic values
         $GLOBALS['siteconfig']['links'] = array_merge($GLOBALS['siteconfig']['links'], [
             ['rel' => 'canonical', 'href' => 'https://'.(preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1 ? 'www.' : '').$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.$_SERVER['REQUEST_URI']],
-            ['rel' => 'stylesheet preload', 'href' => '/frontend/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*').'/css.css', 'as' => 'style'],
-            ['rel' => 'preload', 'href' => '/frontend/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*').'/js.js', 'as' => 'script'],
+            ['rel' => 'stylesheet preload', 'href' => '/frontend/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*').'.css', 'as' => 'style'],
+            ['rel' => 'preload', 'href' => '/frontend/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*').'.js', 'as' => 'script'],
         ]);
         #Send headers
-        (new \Simbiat\http20\Headers)->links($GLOBALS['siteconfig']['links']);
+        self::$headers->links($GLOBALS['siteconfig']['links']);
     }
     
     #Database connection
@@ -171,7 +181,7 @@ class HomePage
                     $this->twigProc(error: 403);
                 }
                 return true;
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 self::$dbup = false;
                 return false;
             }
@@ -196,7 +206,7 @@ class HomePage
         $twigVars['css_version'] = $this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*');
         $twigVars['js_version'] = $this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*');
         #Set link tags
-        $twigVars['link_tags'] = (new \Simbiat\http20\Headers)->links($GLOBALS['siteconfig']['links'], 'head');
+        $twigVars['link_tags'] = self::$headers->links($GLOBALS['siteconfig']['links'], 'head');
         if (self::$dbup) {
             #Update default variables with values from database
             $twigVars = array_merge($twigVars, (new \Simbiat\Database\Controller)->selectPair('SELECT `setting`, `value` FROM `sys__settings`'));
@@ -221,7 +231,7 @@ class HomePage
             $twigVars['http_error'] = $error;
             $twigVars['title'] = $twigVars['site_name'].': '.($error === 5032 ? 'Maintenance' : strval($error));
             $twigVars['h1'] = $twigVars['title'];
-            (new \Simbiat\http20\Headers)->clientReturn(($error === 5032 ? '503' : strval($error)), false);
+            self::$headers->clientReturn(($error === 5032 ? '503' : strval($error)), false);
         }
         #Merge with extra variables provided
         $twigVars = array_merge($twigVars, $extraVars);
