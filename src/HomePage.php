@@ -205,6 +205,12 @@ class HomePage
         #Set versions of CSS and JS
         $twigVars['css_version'] = $this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*');
         $twigVars['js_version'] = $this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*');
+        #Flag for Save-Data header
+        if (isset($_SERVER['HTTP_SAVE_DATA']) && preg_match('/^on$/i', $_SERVER['HTTP_SAVE_DATA']) === 1) {
+            $twigVars['save_data'] = 'true';
+        } else {
+            $twigVars['save_data'] = 'false';
+        }
         #Set link tags
         $twigVars['link_tags'] = self::$headers->links($GLOBALS['siteconfig']['links'], 'head');
         if (self::$dbup) {
