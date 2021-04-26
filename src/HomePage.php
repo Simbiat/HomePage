@@ -163,7 +163,7 @@ class HomePage
     }
     
     #Database connection
-    public function dbConnect(): bool
+    public function dbConnect(bool $extrachecks = false): bool
     {
         #Check in case we accidentally call this for 2nd time
         if (self::$dbup) {
@@ -172,13 +172,16 @@ class HomePage
             try {
                 (new \Simbiat\Database\Pool)->openConnection((new \Simbiat\Database\Config)->setUser($GLOBALS['siteconfig']['database']['user'])->setPassword($GLOBALS['siteconfig']['database']['password'])->setDB($GLOBALS['siteconfig']['database']['dbname'])->setOption(\PDO::MYSQL_ATTR_FOUND_ROWS, true)->setOption(\PDO::MYSQL_ATTR_INIT_COMMAND, $GLOBALS['siteconfig']['database']['settings']));
                 self::$dbup = true;
-                #Check if maintenance
-                if ((new \Simbiat\Database\Controller)->selectValue('SELECT `value` FROM `sys__settings` WHERE `setting`=\'maintenance\'') == 1) {
-                    $this->twigProc(error: 5032);
-                }
-                #Check if banned
-                if ((new \Simbiat\Common\Security)->banedipcheck() === true) {
-                    $this->twigProc(error: 403);
+                #In some cases these extra checks are not required
+                if ($extrachecks === false) {
+                    #Check if maintenance
+                    if ((new \Simbiat\Database\Controller)->selectValue('SELECT `value` FROM `sys__settings` WHERE `setting`=\'maintenance\'') == 1) {
+                        $this->twigProc(error: 5032);
+                    }
+                    #Check if banned
+                    if ((new \Simbiat\Common\Security)->banedipcheck() === true) {
+                        $this->twigProc(error: 403);
+                    }
                 }
                 return true;
             } catch (\Exception $e) {
