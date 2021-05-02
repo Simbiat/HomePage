@@ -179,7 +179,7 @@ class HomePage
                         $this->twigProc(error: 5032);
                     }
                     #Check if banned
-                    if ((new \Simbiat\Common\Security)->banedipcheck() === true) {
+                    if ((new \Simbiat\usercontrol\Security)->bannedIP() === true) {
                         $this->twigProc(error: 403);
                     }
                 }
