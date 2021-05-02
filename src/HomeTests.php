@@ -45,7 +45,7 @@ class HomeTests
         exit;
     }
     
-    #Functino to test download
+    #Function to test download
     public function downloadTest(string $filepath, string $bytes = ''): void
     {
         if (!empty($bytes)) {
