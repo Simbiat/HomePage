@@ -268,7 +268,9 @@ class HomeRouter
                         $outputArray['http_error'] = 404;
                     } else {
                         #Try to exit early based on modification date
-                        $headers->lastModified(strtotime($outputArray['bicdetails']['DT_IZM']), true);
+                        if (!empty($outputArray['bicdetails']['DT_IZM'])) {
+                            $headers->lastModified(strtotime($outputArray['bicdetails']['DT_IZM']), true);
+                        }
                         #Continue breadcrumbs
                         $breadarray[] = ['href' => '/bictracker/bic/'.$uri[1], 'name' => $outputArray['bicdetails']['NAMEP']];
                         #Set cache due to query complexity
