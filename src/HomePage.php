@@ -187,11 +187,13 @@ class HomePage
                 self::$dbup = false;
                 return false;
             }
-            #Try to start session. It's not critical for the whole site, thus it's ok for it to fail
-            if (session_status() == PHP_SESSION_NONE || session_status() == PHP_SESSION_ACTIVE) {
-                #Use custom session handler
-                session_set_save_handler(new \Simbiat\usercontrol\Session, true);
-                session_start();
+            if ($extrachecks === true) {
+                #Try to start session. It's not critical for the whole site, thus it's ok for it to fail
+                if (session_status() == PHP_SESSION_NONE || session_status() == PHP_SESSION_ACTIVE) {
+                    #Use custom session handler
+                    session_set_save_handler(new \Simbiat\usercontrol\Session, true);
+                    session_start();
+                }
             }
             return true;
         }
