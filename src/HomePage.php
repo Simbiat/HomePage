@@ -179,15 +179,21 @@ class HomePage
                         $this->twigProc(error: 5032);
                     }
                     #Check if banned
-                    if ((new \Simbiat\usercontrol\Security)->bannedIP() === true) {
+                    if ((new \Simbiat\usercontrol\Bans)->bannedIP() === true) {
                         $this->twigProc(error: 403);
                     }
                 }
-                return true;
             } catch (\Exception $e) {
                 self::$dbup = false;
                 return false;
             }
+            #Try to start session. It's not critical for the whole site, thus it's ok for it to fail
+            if (session_status() == PHP_SESSION_NONE || session_status() == PHP_SESSION_ACTIVE) {
+                #Use custom session handler
+                session_set_save_handler(new \Simbiat\usercontrol\Session, true);
+                session_start();
+            }
+            return true;
         }
     }
     
@@ -275,6 +281,9 @@ class HomePage
             self::$HTMLCache->set($output, '', intval($twigVars['cache_age']), 600, true, true);
         } else {
             (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
+        }
+        if (session_status() == PHP_SESSION_ACTIVE) {
+            session_write_close();
         }
         exit;
     }
