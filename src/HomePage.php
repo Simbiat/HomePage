@@ -166,14 +166,12 @@ class HomePage
     public function dbConnect(bool $extrachecks = false): bool
     {
         #Check in case we accidentally call this for 2nd time
-        if (self::$dbup) {
-            return true;
-        } else {
+        if (self::$dbup === false) {
             try {
                 (new \Simbiat\Database\Pool)->openConnection((new \Simbiat\Database\Config)->setUser($GLOBALS['siteconfig']['database']['user'])->setPassword($GLOBALS['siteconfig']['database']['password'])->setDB($GLOBALS['siteconfig']['database']['dbname'])->setOption(\PDO::MYSQL_ATTR_FOUND_ROWS, true)->setOption(\PDO::MYSQL_ATTR_INIT_COMMAND, $GLOBALS['siteconfig']['database']['settings']));
                 self::$dbup = true;
                 #In some cases these extra checks are not required
-                if ($extrachecks === false) {
+                if ($extrachecks === true) {
                     #Check if maintenance
                     if ((new \Simbiat\Database\Controller)->selectValue('SELECT `value` FROM `sys__settings` WHERE `setting`=\'maintenance\'') == 1) {
                         $this->twigProc(error: 5032);
@@ -187,16 +185,16 @@ class HomePage
                 self::$dbup = false;
                 return false;
             }
-            if ($extrachecks === true) {
-                #Try to start session. It's not critical for the whole site, thus it's ok for it to fail
-                if (session_status() == PHP_SESSION_NONE || session_status() == PHP_SESSION_ACTIVE) {
-                    #Use custom session handler
-                    session_set_save_handler(new \Simbiat\usercontrol\Session, true);
-                    session_start();
-                }
-            }
-            return true;
         }
+        if ($extrachecks === true) {
+            #Try to start session. It's not critical for the whole site, thus it's ok for it to fail
+            if (session_status() === PHP_SESSION_NONE || session_status() === PHP_SESSION_ACTIVE) {
+                #Use custom session handler
+                session_set_save_handler(new \Simbiat\usercontrol\Session, true);
+                session_start();
+            }
+        }
+        return true;
     }
     
     #Twig processing of the generated page

@@ -19,7 +19,7 @@ class HomeApi
                 $data = $this->ffTracker(array_slice($uri, 1));
                 break;
             case 'cron':
-                (new \Simbiat\HomePage)->dbConnect();
+                (new \Simbiat\HomePage)->dbConnect(false);
                 (new \Simbiat\Cron)->process(1);
                 exit;
                 break;
@@ -53,7 +53,7 @@ class HomeApi
             $this->apiEcho(httpCode: '400');
         }
         #Connect to DB
-        if ((new \Simbiat\HomePage)->dbConnect() === false) {
+        if ((new \Simbiat\HomePage)->dbConnect(false) === false) {
             $this->apiEcho(httpCode: '503');
         }
         if ($uri[0] === 'register') {
@@ -93,7 +93,7 @@ class HomeApi
         }
         if ($uri[0] === 'bic') {
             #Connect to DB
-            if ((new \Simbiat\HomePage)->dbConnect()) {
+            if ((new \Simbiat\HomePage)->dbConnect(false)) {
                 #Get data
                 $data = (new \bicDBF\bicDBF)->getCurrent(rawurldecode($uri[1]));
                 #Check if empty
