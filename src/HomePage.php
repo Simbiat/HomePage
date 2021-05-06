@@ -131,7 +131,17 @@ class HomePage
             #Create HTMLCache object to check for cache
             self::$HTMLCache = (new \Simbiat\HTMLCache($GLOBALS['siteconfig']['cachedir'].'html/'));
             #Attempt to use cache
-            self::$HTMLCache->get('', true, true);
+            $output = self::$HTMLCache->get('', true, false);
+            if (!empty($output)) {
+                #Cache hit, we need to connect to DB and initiatie session to write data about it
+                if ($this->dbConnect(true) === true) {
+                    #Close session right after if it opened
+                    if (session_status() === PHP_SESSION_ACTIVE) {
+                        session_write_close();
+                    }
+                }
+                self::$HTMLCache->cacheOutput($output);
+            }
         }
         #Return 0, since we did not hit anything
         return 0;
@@ -276,14 +286,15 @@ class HomePage
         $this->socialMeta($twigVars);
         #Render page
         $output = $twig->render('main/main.html', $twigVars);
+        #Close session
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         #Cache page if cache age is setup
         if (self::$PROD && !empty($twigVars['cache_age']) && is_numeric($twigVars['cache_age'])) {
             self::$HTMLCache->set($output, '', intval($twigVars['cache_age']), 600, true, true);
         } else {
             (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
-        }
-        if (session_status() == PHP_SESSION_ACTIVE) {
-            session_write_close();
         }
         exit;
     }
