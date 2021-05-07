@@ -202,6 +202,9 @@ class HomePage
                 #Use custom session handler
                 session_set_save_handler(new \Simbiat\usercontrol\Session, true);
                 session_start();
+                if (!empty($_SESSION['UA']['client']) && preg_match('/^Internet Explorer.*/i', $_SESSION['UA']['client']) === 1) {
+                    $this->twigProc(['unsupported' => true, 'client' => $_SESSION['UA']['client']], 418, 'aggressive');
+                }
             }
         }
         return true;
