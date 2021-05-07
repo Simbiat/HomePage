@@ -198,7 +198,7 @@ class HomePage
         }
         if ($extrachecks === true) {
             #Try to start session. It's not critical for the whole site, thus it's ok for it to fail
-            if (session_status() === PHP_SESSION_NONE || session_status() === PHP_SESSION_ACTIVE) {
+            if (session_status() !== PHP_SESSION_DISABLED) {
                 #Use custom session handler
                 session_set_save_handler(new \Simbiat\usercontrol\Session, true);
                 session_start();
