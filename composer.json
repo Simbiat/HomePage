@@ -18,7 +18,8 @@
         "simbiat/database": "^2",
         "simbiat/http20": "^1.1",
         "simbiat/htmlcache": "^1",
-        "simbiat/fftracker": "*"
+        "simbiat/fftracker": "*",
+        "simbiat/bicxml": "*"
     },
     "autoload": {
         "psr-4": {
