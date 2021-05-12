@@ -79,12 +79,33 @@ class HomePage
     }
     
     #Function returns version of the file based on numbe rof fiels and date of the newest file
-    public function filesVersion(string $glob, bool $countfiles = false): string
+    public function filesVersion(string|array $files, bool $countfiles = false): string
     {
-        #Get file list
-        $filelist = glob($glob);
-        #Generate the version
-        return ($countfiles === true ? count($filelist).'.' : '').max(array_map('filemtime', array_filter($filelist, 'is_file')));
+        #Check if a string
+        if (is_string($files)) {
+            #Convert to array
+           $files = [$files];
+        }
+        #Prepare array of dates
+        $dates = [];
+        #Iterate array
+        foreach ($files as $file) {
+            #Check if string is file
+            if (is_file($file)) {
+                #Add date to list
+                $dates[] = filemtime($file);
+            } else {
+                #Check if directory
+                if (is_dir($file)) {
+                    $filelist = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
+                    foreach ($filelist as $subfile) {
+                        #Add date to list
+                        $dates[] = $subfile->getMTime();
+                    }
+                }
+            }
+        }
+        return strval(max($dates));
     }
     
     #Function to process some special files
@@ -165,8 +186,8 @@ class HomePage
         #Update list with dynamic values
         $GLOBALS['siteconfig']['links'] = array_merge($GLOBALS['siteconfig']['links'], [
             ['rel' => 'canonical', 'href' => 'https://'.(preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1 ? 'www.' : '').$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.$_SERVER['REQUEST_URI']],
-            ['rel' => 'stylesheet preload', 'href' => '/frontend/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*').'.css', 'as' => 'style'],
-            ['rel' => 'preload', 'href' => '/frontend/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*').'.js', 'as' => 'script'],
+            ['rel' => 'stylesheet preload', 'href' => '/frontend/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir']).'.css', 'as' => 'style'],
+            ['rel' => 'preload', 'href' => '/frontend/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir']).'.js', 'as' => 'script'],
         ]);
         #Send headers
         self::$headers->links($GLOBALS['siteconfig']['links']);
@@ -225,8 +246,8 @@ class HomePage
             'currentyear' => '-'.date('Y', time()),
         ];
         #Set versions of CSS and JS
-        $twigVars['css_version'] = $this->filesVersion($GLOBALS['siteconfig']['cssdir'].'*');
-        $twigVars['js_version'] = $this->filesVersion($GLOBALS['siteconfig']['jsdir'].'*');
+        $twigVars['css_version'] = $this->filesVersion($GLOBALS['siteconfig']['cssdir']);
+        $twigVars['js_version'] = $this->filesVersion($GLOBALS['siteconfig']['jsdir']);
         #Flag for Save-Data header
         if (isset($_SERVER['HTTP_SAVE_DATA']) && preg_match('/^on$/i', $_SERVER['HTTP_SAVE_DATA']) === 1) {
             $twigVars['save_data'] = 'true';

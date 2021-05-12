@@ -4,6 +4,52 @@ namespace Simbiat;
 
 class HomeRouter
 {
+    #Function to prepare data for user control pages
+    public function usercontrol(array $uri): array
+    {
+        $headers = (new \Simbiat\http20\Headers);
+        $html = (new \Simbiat\http20\HTML);
+        #Check if URI is empty
+        if (empty($uri)) {
+            $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/uc/registration', true, true, false);
+        }
+        #Prepare array
+        $outputArray = [
+            'service_name' => 'usercontrol',
+            'h1' => 'User Control',
+            'title' => 'User Control',
+            'ogdesc' => 'User\'s Control Panel',
+        ];
+        #Start breadcrumbs
+        $breadarray = [
+            ['href'=>'/', 'name'=>'Home page'],
+        ];
+        $uri[0] = strtolower($uri[0]);
+        switch ($uri[0]) {
+            #Process search page
+            case 'registration':
+            case 'register':
+            case 'login':
+                if (empty($_SESSION['username'])) {
+                    $outputArray['subservice'] = 'registration';
+                    $outputArray['h1'] = $outputArray['title'] = 'User login/registration';
+                    $outputArray['registration_form'] = (new \Simbiat\usercontrol\Register)->form();
+                } else {
+                    #Redirect to main page if user is already authenticated
+                    $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : ''), false, true, false);
+                }
+                break;
+            default:
+                $outputArray['http_error'] = 404;
+                break;
+        }
+        #Add breadcrumbs
+        $breadarray = $html->breadcrumbs(items: $breadarray, links: true, headers: true);
+        $outputArray['breadcrumbs']['usercontrol'] = $breadarray['breadcrumbs'];
+        $outputArray['breadcrumbs']['links'] = $breadarray['links'];
+        return $outputArray;
+    }
+    
     #Function to prepare data for FFTracker depending on the URI
     public function fftracker(array $uri): array
     {
