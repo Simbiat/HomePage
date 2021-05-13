@@ -260,16 +260,11 @@ class HomePage
             #Update default variables with values from database
             $twigVars = array_merge($twigVars, (new \Simbiat\Database\Controller)->selectPair('SELECT `setting`, `value` FROM `sys__settings`'));
             #Get sidebar
-            $twigVars['sidebar']['fflinks'] = (new \Simbiat\Database\Controller)->selectAll(
-                'SELECT `characters`.* FROM (SELECT `characterid` as `id`, \'character\' as `type`, `name`, `updated`, `registered` FROM `ff__character` ORDER BY `updated` DESC LIMIT 25) `characters`
-                UNION ALL
-                    SELECT `freecompnies`.* FROM (SELECT `freecompanyid` as `id`, \'freecompany\' as `type`, `name`, `updated`, `registered` FROM `ff__freecompany` ORDER BY `updated` DESC LIMIT 25) `freecompnies`
-                UNION ALL
-                    SELECT `linkshells`.* FROM (SELECT `linkshellid` as `id`, \'linkshell\' as `type`, `name`, `updated`, `registered` FROM `ff__linkshell` ORDER BY `updated` DESC LIMIT 25) `linkshells`
-                UNION ALL
-                    SELECT `pvpteams`.* FROM (SELECT `pvpteamid` as `id`, \'pvpteam\' as `type`, `name`, `updated`, `registered` FROM `ff__pvpteam` ORDER BY `updated` DESC LIMIT 25) `pvpteams`
-                ORDER BY `updated` DESC LIMIT 25'
-            );
+            $twigVars['sidebar']['fflinks'] = (new \Simbiat\FFTracker)->GetLastEntities(5);
+            #Show login form in sidebar, but only if we do not ahve login/registration page open
+            if (preg_match('/^uc\/(registration|register|login|signin|signup|join)$/i', $_SERVER['REQUEST_URI']) !== 1) {
+                $twigVars['user_side_panel'] = (new \Simbiat\usercontrol\Register)->form();
+            }
         } else {
             #Enforce 503 error
             $error = 503;
