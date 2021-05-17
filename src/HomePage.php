@@ -267,7 +267,7 @@ class HomePage
             $twigVars['sidebar']['fflinks'] = (new \Simbiat\FFTracker)->GetLastEntities(5);
             #Show login form in sidebar, but only if we do not ahve login/registration page open
             if (preg_match('/^uc\/(registration|register|login|signin|signup|join)$/i', $_SERVER['REQUEST_URI']) !== 1) {
-                $twigVars['user_side_panel'] = (new \Simbiat\usercontrol\Register)->form();
+                $twigVars['user_side_panel'] = (new \Simbiat\usercontrol\Signinup)->form();
             }
         } else {
             #Enforce 503 error
