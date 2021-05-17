@@ -266,7 +266,7 @@ class HomeRouter
     public function bictracker(array $uri): array
     {
         $headers = (new \Simbiat\http20\Headers);
-        $bictracker = (new \bicDBF\bicDBF);
+        $bictracker = (new \Simbiat\bicXML);
         #Check if URI is empty
         if (empty($uri)) {
             $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/bictracker/search', true, true, false);

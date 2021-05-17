@@ -95,7 +95,7 @@ class HomeApi
             #Connect to DB
             if ((new \Simbiat\HomePage)->dbConnect(false)) {
                 #Get data
-                $data = (new \bicDBF\bicDBF)->getCurrent(rawurldecode($uri[1]));
+                $data = (new \Simbiat\bicXML)->getCurrent(rawurldecode($uri[1]));
                 #Check if empty
                 if (empty($data)) {
                     $this->apiEcho(httpCode: '404');
