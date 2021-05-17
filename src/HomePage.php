@@ -156,6 +156,8 @@ class HomePage
             if (!empty($output)) {
                 #Cache hit, we need to connect to DB and initiatie session to write data about it
                 if ($this->dbConnect(true) === true) {
+                    #Process POST data if any
+                    (new \Simbiat\HomeRouter)->postProcess();
                     #Close session right after if it opened
                     if (session_status() === PHP_SESSION_ACTIVE) {
                         session_write_close();
@@ -171,7 +173,7 @@ class HomePage
     #Function to send headers common for all items
     public function commonHeaders(): void
     {
-        self::$headers->performance()->secFetch()->security('strict', [], [], [], ['GET', 'HEAD']);
+        self::$headers->performance()->secFetch()->security('strict', [], [], [], ['GET', 'HEAD', 'POST']);
     }
     
     #Function to send HTML only headers
@@ -226,6 +228,8 @@ class HomePage
                 if (!empty($_SESSION['UA']['client']) && preg_match('/^Internet Explorer.*/i', $_SESSION['UA']['client']) === 1) {
                     $this->twigProc(['unsupported' => true, 'client' => $_SESSION['UA']['client']], 418, 'aggressive');
                 }
+                #Process POST data if any
+                (new \Simbiat\HomeRouter)->postProcess();
             }
         }
         return true;

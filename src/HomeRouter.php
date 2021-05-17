@@ -4,6 +4,17 @@ namespace Simbiat;
 
 class HomeRouter
 {
+    #Function to process (or rather relay) $_POST data
+    public function postProcess(): void
+    {
+        if (!empty($_POST)) {
+            if (!empty($_POST['signinup'])) {
+                (new \Simbiat\usercontrol\Signinup)->signinup();
+            }
+        }
+    }
+    
+    
     #Function to prepare data for user control pages
     public function usercontrol(array $uri): array
     {
@@ -36,7 +47,7 @@ class HomeRouter
                 if (empty($_SESSION['username'])) {
                     $outputArray['subservice'] = 'registration';
                     $outputArray['h1'] = $outputArray['title'] = 'User sign in/join';
-                    $outputArray['login_form'] = (new \Simbiat\usercontrol\Register)->form();
+                    $outputArray['login_form'] = (new \Simbiat\usercontrol\Signinup)->form();
                 } else {
                     #Redirect to main page if user is already authenticated
                     $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : ''), false, true, false);
