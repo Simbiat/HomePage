@@ -15,7 +15,7 @@ class HomePage
     public static ?\Simbiat\HTMLCache $HTMLCache = NULL;
     #HTTP headers object
     public static ?\Simbiat\http20\Headers $headers = NULL;
-    
+
     public function __construct(bool $PROD = false)
     {
         #Set output compression to 9 for consistency
@@ -33,7 +33,7 @@ class HomePage
         #Cache headers object
         self::$headers = new \Simbiat\http20\Headers;
     }
-    
+
     public function canonical(): void
     {
         #Force HTTPS
@@ -45,7 +45,7 @@ class HomePage
         #Set canonical link, that may be used in the future
         self::$canonical = 'https://'.(preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1 ? 'www.' : '').$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/';
     }
-    
+
     #Redirect to HTTPS
     private function forceSecure(int $port = 443): void
     {
@@ -62,7 +62,7 @@ class HomePage
             self::$headers->redirect('https://'.$_SERVER['HTTP_HOST'].($port !== 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
         }
     }
-    
+
     #Function to force www version of the website, unless on subdomain
     private function forceWWW(int $port = 443): void
     {
@@ -71,13 +71,13 @@ class HomePage
             self::$headers->redirect('https://'.'www.'.$_SERVER['HTTP_HOST'].($port != 443 ? ':'.$port : '').$_SERVER['REQUEST_URI'], true, true, false);
         }
     }
-    
+
     #Function to trim request URI from whitespace, slashes, and then whitespaces before slashes
     private function trimURI(): void
     {
         $_SERVER['REQUEST_URI'] = rawurldecode(trim(trim(trim($_SERVER['REQUEST_URI']), '/')));
     }
-    
+
     #Function returns version of the file based on numbe rof fiels and date of the newest file
     public function filesVersion(string|array $files, bool $countfiles = false): string
     {
@@ -107,7 +107,7 @@ class HomePage
         }
         return strval(max($dates));
     }
-    
+
     #Function to process some special files
     public function filesRequests(string $request): int
     {
@@ -116,27 +116,27 @@ class HomePage
         if (preg_match('/^browserconfig\.xml$/i', $request) === 1) {
             #Process MS Tile
             (new \Simbiat\http20\Meta)->msTile($GLOBALS['siteconfig']['mstile'], [], [], true, true);
-        } elseif (preg_match('/^frontend\/js\/\d+\.js$/i', $request) === 1) {
+        } elseif (preg_match('/^js\/\d+\.js$/i', $request) === 1) {
             #Process JS
             (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['jsdir'], 'js', false, '', 'aggressive');
-        } elseif (preg_match('/^frontend\/css\/\d+\.css$/i', $request) === 1) {
+        } elseif (preg_match('/^css\/\d+\.css$/i', $request) === 1) {
             #Process CSS
             (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['cssdir'], 'css', true, '', 'aggressive');
-        } elseif (preg_match('/^frontend\/images\/fftracker\/.*$/i', $request) === 1) {
+        } elseif (preg_match('/^img\/fftracker\/.*$/i', $request) === 1) {
             #Process FFTracker images
             #Get real path
-            if (preg_match('/^(frontend\/images\/fftracker\/avatar\/)(.+)$/i', $request) === 1) {
-                $imgpath = preg_replace('/^(frontend\/images\/fftracker\/avatar\/)(.+)/i', 'https://img2.finalfantasyxiv.com/f/$2', $request);
+            if (preg_match('/^(img\/fftracker\/avatar\/)(.+)$/i', $request) === 1) {
+                $imgpath = preg_replace('/^(img\/fftracker\/avatar\/)(.+)/i', 'https://img2.finalfantasyxiv.com/f/$2', $request);
                 (new \Simbiat\http20\Sharing)->proxyFile($imgpath, 'week');
-            } elseif (preg_match('/^(frontend\/images\/fftracker\/icon\/)(.+)$/i', $request) === 1) {
-                $imgpath = preg_replace('/^(frontend\/images\/fftracker\/icon\/)(.+)/i', 'https://img.finalfantasyxiv.com/lds/pc/global/images/itemicon/$2', $request);
+            } elseif (preg_match('/^(img\/fftracker\/icon\/)(.+)$/i', $request) === 1) {
+                $imgpath = preg_replace('/^(img\/fftracker\/icon\/)(.+)/i', 'https://img.finalfantasyxiv.com/lds/pc/global/images/itemicon/$2', $request);
                 (new \Simbiat\http20\Sharing)->proxyFile($imgpath, 'week');
             } else {
-                $imgpath = (new \Simbiat\FFTracker)->ImageShow(preg_replace('/^frontend\/images\/fftracker\//i', '', $request));
+                $imgpath = (new \Simbiat\FFTracker)->ImageShow(preg_replace('/^img\/fftracker\//i', '', $request));
                 #Output the image
                 (new \Simbiat\http20\Sharing)->fileEcho($imgpath);
             }
-        } elseif (preg_match('/^(favicon\.ico)|(frontend\/images\/favicons\/favicon\.ico)$/i', $request) === 1) {
+        } elseif (preg_match('/^(favicon\.ico)|(img\/favicons\/favicon\.ico)$/i', $request) === 1) {
             #Process favicon
             (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
         } elseif (preg_match('/^(bic)($|\/.*)/i', $request) === 1) {
@@ -169,32 +169,32 @@ class HomePage
         #Return 0, since we did not hit anything
         return 0;
     }
-    
+
     #Function to send headers common for all items
     public function commonHeaders(): void
     {
         self::$headers->performance()->secFetch()->security('strict', [], [], [], ['GET', 'HEAD', 'POST']);
     }
-    
+
     #Function to send HTML only headers
     public function htmlHeaders(): void
     {
         self::$headers->features(['web-share'=>'\'self\''])->contentPolicy($GLOBALS['siteconfig']['allowedDirectives'], false);
     }
-    
+
     #Function to send common Link headers
     public function commonLinks(): void
     {
         #Update list with dynamic values
         $GLOBALS['siteconfig']['links'] = array_merge($GLOBALS['siteconfig']['links'], [
             ['rel' => 'canonical', 'href' => 'https://'.(preg_match('/^[a-z0-9\-_~]+\.[a-z0-9\-_~]+$/', $_SERVER['HTTP_HOST']) === 1 ? 'www.' : '').$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.$_SERVER['REQUEST_URI']],
-            ['rel' => 'stylesheet preload', 'href' => '/frontend/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir']).'.css', 'as' => 'style'],
-            ['rel' => 'preload', 'href' => '/frontend/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir']).'.js', 'as' => 'script'],
+            ['rel' => 'stylesheet preload', 'href' => '/css/'.$this->filesVersion($GLOBALS['siteconfig']['cssdir']).'.css', 'as' => 'style'],
+            ['rel' => 'preload', 'href' => '/js/'.$this->filesVersion($GLOBALS['siteconfig']['jsdir']).'.js', 'as' => 'script'],
         ]);
         #Send headers
         self::$headers->links($GLOBALS['siteconfig']['links']);
     }
-    
+
     #Database connection
     public function dbConnect(bool $extrachecks = false): bool
     {
@@ -234,7 +234,7 @@ class HomePage
         }
         return true;
     }
-    
+
     #Twig processing of the generated page
     public function twigProc(array $extraVars = [], ?int $error = NULL, string $cacheStrat = '')
     {
@@ -321,7 +321,7 @@ class HomePage
         }
         exit;
     }
-    
+
     #Function to generate social media metas
     private function socialMeta(&$twigVars): void
     {
@@ -335,7 +335,7 @@ class HomePage
             'site:id' => '3049604752',
             'creator' => '@simbiat199',
             'creator:id' => '3049604752',
-            'image' => $twigVars['domain'].'/frontend/images/favicons/simbiat.png',
+            'image' => $twigVars['domain'].'/img/favicons/simbiat.png',
             'image:alt' => 'Simbiat Software logo',
         ], [], false);
         #Facebook

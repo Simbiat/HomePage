@@ -18,7 +18,7 @@ class HomeFeeds
             };
         }
     }
-    
+
     #Generate Atom/RSS
     private function feed(array $uri, string $format = 'atom'): array
     {
@@ -40,8 +40,8 @@ class HomeFeeds
                             'email' => $GLOBALS['siteconfig']['adminmail'],
                             'uri' => 'https://'.$_SERVER['HTTP_HOST'].'/',
                         ]],
-                        'icon' => 'https://'.$_SERVER['HTTP_HOST'].'/frontend/images/favicons/simbiat.png',
-                        'logo' => 'https://'.$_SERVER['HTTP_HOST'].'/frontend/images/ogimage.png',
+                        'icon' => 'https://'.$_SERVER['HTTP_HOST'].'/img/favicons/simbiat.png',
+                        'logo' => 'https://'.$_SERVER['HTTP_HOST'].'/img/ogimage.png',
                     ];
                 } elseif ($format === 'rss') {
                     $settings = [
@@ -50,7 +50,7 @@ class HomeFeeds
                         'language' => 'en-us',
                         'ttl' => 3600,
                         'image' => [
-                            'url' => 'https://'.$_SERVER['HTTP_HOST'].'/frontend/images/favicons/android-chrome-144x144.png',
+                            'url' => 'https://'.$_SERVER['HTTP_HOST'].'/img/favicons/android-chrome-144x144.png',
                             'width' => 144,
                             'height' => 144,
                         ],
@@ -85,20 +85,20 @@ class HomeFeeds
                         'bicchanged' => 'SELECT CONCAT(\'https://'.$_SERVER['HTTP_HOST'].'/bictracker/bic/\', `VKEY`) as `link`, `NAMEP` as `title`, `DT_IZM` as `pubDate`, \'BICs\' AS `category` FROM `bic__list` a WHERE `DATEDEL` IS NULL ORDER BY `DT_IZM` DESC LIMIT 25',
                         'bicdeleted' => 'SELECT CONCAT(\'https://'.$_SERVER['HTTP_HOST'].'/bictracker/bic/\', `VKEY`) as `link`, `NAMEP` as `title`, `DT_IZM` as `pubDate`, \'BICs\' AS `category` FROM `bic__list` a WHERE `DATEDEL` IS NOT NULL ORDER BY `DATEDEL` DESC LIMIT 25',
                     };
-                    
+
                 }
                 #Generate the feed
                 if ($format === 'atom') {
                     (new \Simbiat\http20\Atom)->Atom($GLOBALS['siteconfig']['site_name'].': '.$title, (new \Simbiat\Database\Controller)->selectAll($query), feed_settings: $settings);
                 } elseif ($format === 'rss') {
                     (new \Simbiat\http20\RSS)->RSS($GLOBALS['siteconfig']['site_name'].': '.$title, (new \Simbiat\Database\Controller)->selectAll($query), feed_settings: $settings);
-                }              
+                }
             }
         }
         #If we reach here, it means, the requested page does not exist
         return ['http_error' => 404];
     }
-    
+
     #Generate sitemap
     private function sitemap(array $uri): array
     {
@@ -201,7 +201,7 @@ class HomeFeeds
         #If we reach here, it means, the requested page does not exist
         return ['http_error' => 404];
     }
-    
+
     #Helper function to generate index page for sitemap
     private function sitemapIndex(string $baseurl): array
     {
