@@ -2,6 +2,9 @@
 declare(strict_types=1);
 namespace Simbiat;
 
+use Simbiat\http20\Common;
+use Simbiat\http20\Sharing;
+
 class HomeTests
 {
     #Function to test file upload using PUT
@@ -12,7 +15,6 @@ class HomeTests
         curl_setopt($curl, CURLOPT_UPLOAD, true);
         curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_BINARYTRANSFER, 1);
         curl_setopt($curl, CURLOPT_HEADER, false);
         curl_setopt($curl, CURLOPT_PUT, 1);
         curl_setopt($curl, CURLOPT_TIMEOUT, 50);
@@ -20,12 +22,12 @@ class HomeTests
         curl_setopt($curl, CURLOPT_INFILE, fopen($filepath, 'rb'));
         curl_setopt($curl, CURLOPT_INFILESIZE, filesize($filepath));
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        (new \Simbiat\http20\Common)->zEcho('<pre>'.var_export(curl_exec($curl), true).'</pre>');
+        (new Common)->zEcho('<pre>'.var_export(curl_exec($curl), true).'</pre>');
         exit;
     }
-    
+
     #Function to test file upload using POST
-    public function uploadPost(string $uploadpath, int $MAX_FILE_SIZE = 300000000): void
+    public function uploadPost(string $uploadPath, int $MAX_FILE_SIZE = 300000000): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $output = '
@@ -39,20 +41,19 @@ class HomeTests
             </form>
             ';
         } else {
-           $output = '<pre>'.var_export((new \Simbiat\http20\Sharing)->upload($uploadpath, false, false, [], false), true).'</pre>';
+           $output = '<pre>'.var_export((new Sharing)->upload($uploadPath, false, false, [], false), true).'</pre>';
         }
-        (new \Simbiat\http20\Common)->zEcho($output);
+        (new Common)->zEcho($output);
         exit;
     }
-    
+
     #Function to test download
     public function downloadTest(string $filepath, string $bytes = ''): void
     {
         if (!empty($bytes)) {
             $_SERVER['HTTP_RANGE'] = 'bytes='.$bytes;
         }
-        (new \Simbiat\http20\Sharing)->download($filepath, '', '', true);
+        (new Sharing)->download($filepath, '', '', true);
         exit;
     }
 }
-?>

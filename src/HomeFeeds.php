@@ -2,9 +2,18 @@
 declare(strict_types=1);
 namespace Simbiat;
 
+use Simbiat\Database\Controller;
+use Simbiat\http20\Atom;
+use Simbiat\http20\Headers;
+use Simbiat\http20\RSS;
+use Simbiat\http20\Sitemap;
+
 class HomeFeeds
 {
     #Fcuntion to parse URI and generate appropriate feed
+    /**
+     * @throws \Exception
+     */
     public function uriParse(array $uri): array
     {
         if (empty($uri[0])) {
@@ -12,7 +21,7 @@ class HomeFeeds
         } else {
             return match(strtolower($uri[0])) {
                 'sitemap' => $this->sitemap(array_slice($uri, 1)),
-                'atom' => $this->feed(array_slice($uri, 1), 'atom'),
+                'atom' => $this->feed(array_slice($uri, 1)),
                 'rss' => $this->feed(array_slice($uri, 1), 'rss'),
                 default => ['http_error' => 404],
             };
@@ -20,6 +29,10 @@ class HomeFeeds
     }
 
     #Generate Atom/RSS
+
+    /**
+     * @throws \Exception
+     */
     private function feed(array $uri, string $format = 'atom'): array
     {
         #Check if empty
@@ -30,6 +43,7 @@ class HomeFeeds
                 'bicdeleted' => 'Удаленные банки',
                 default => '',
             };
+            $settings = [];
             #Check that type is supported based on existence of the title
             if (!empty($title)) {
                 #Set general settings first for feeds. Using one array for both types of feeds
@@ -89,9 +103,9 @@ class HomeFeeds
                 }
                 #Generate the feed
                 if ($format === 'atom') {
-                    (new \Simbiat\http20\Atom)->Atom($GLOBALS['siteconfig']['site_name'].': '.$title, (new \Simbiat\Database\Controller)->selectAll($query), feed_settings: $settings);
+                    (new Atom)->Atom($GLOBALS['siteconfig']['site_name'].': '.$title, (new Controller)->selectAll($query), feed_settings: $settings);
                 } elseif ($format === 'rss') {
-                    (new \Simbiat\http20\RSS)->RSS($GLOBALS['siteconfig']['site_name'].': '.$title, (new \Simbiat\Database\Controller)->selectAll($query), feed_settings: $settings);
+                    (new RSS)->RSS($GLOBALS['siteconfig']['site_name'].': '.$title, (new Controller)->selectAll($query), feed_settings: $settings);
                 }
             }
         }
@@ -100,10 +114,14 @@ class HomeFeeds
     }
 
     #Generate sitemap
+
+    /**
+     * @throws \Exception
+     */
     private function sitemap(array $uri): array
     {
         #Cache Headers object
-        $headers = (new \Simbiat\http20\Headers);
+        $headers = (new Headers);
         #Check that not empty
         if (empty($uri)) {
             #Redirect to HTML index
@@ -118,7 +136,7 @@ class HomeFeeds
                     'text/plain' => 'txt',
                     'text/html' => 'html',
                 };
-                #Redirect to index page based on accepteable headers
+                #Redirect to index page based on acceptable headers
                 $headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/sitemap/'.$format.'/index', true, true, false);
             } else {
                 $uri[0] = strtolower($uri[0]);
@@ -164,13 +182,13 @@ class HomeFeeds
                                     #Get links
                                     $uri[2] = intval($uri[2]);
                                     $links = match($uri[1]) {
-                                        'bic' => (new \Simbiat\Database\Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'bictracker/bic/\', `VKEY`, \'/\') AS `loc`, `DT_IZM` AS `lastmod`, `NAMEP` AS `name` FROM `bic__list` ORDER BY `NAMEP` ASC LIMIT '.$uri[2].', 50000'),
-                                        'forum' => (new \Simbiat\Database\Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'thread/\', `threadid`, \'/\') AS `loc`, `date` AS `lastmod`, `title` AS `name` FROM `forum__thread` ORDER BY `title` ASC LIMIT '.$uri[2].', 50000'),
-                                        'ff_achievement' => (new \Simbiat\Database\Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/achievement/\', `achievementid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__achievement` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
-                                        'ff_character' => (new \Simbiat\Database\Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/character/\', `characterid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__character` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
-                                        'ff_freecompany' => (new \Simbiat\Database\Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/freecompany/\', `freecompanyid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__freecompany` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
-                                        'ff_linkshell' => (new \Simbiat\Database\Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/linkshell/\', `linkshellid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__linkshell` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
-                                        'ff_pvpteam' => (new \Simbiat\Database\Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/pvpteam/\', `pvpteamid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__pvpteam` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
+                                        'bic' => (new Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'bictracker/bic/\', `VKEY`, \'/\') AS `loc`, `DT_IZM` AS `lastmod`, `NAMEP` AS `name` FROM `bic__list` ORDER BY `NAMEP` ASC LIMIT '.$uri[2].', 50000'),
+                                        'forum' => (new Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'thread/\', `threadid`, \'/\') AS `loc`, `date` AS `lastmod`, `title` AS `name` FROM `forum__thread` ORDER BY `title` ASC LIMIT '.$uri[2].', 50000'),
+                                        'ff_achievement' => (new Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/achievement/\', `achievementid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__achievement` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
+                                        'ff_character' => (new Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/character/\', `characterid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__character` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
+                                        'ff_freecompany' => (new Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/freecompany/\', `freecompanyid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__freecompany` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
+                                        'ff_linkshell' => (new Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/linkshell/\', `linkshellid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__linkshell` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
+                                        'ff_pvpteam' => (new Controller)->selectAll('SELECT CONCAT(\''.$baseurl.'fftracker/pvpteam/\', `pvpteamid`, \'/\') AS `loc`, `updated` AS `lastmod`, `name` FROM `ff__pvpteam` FORCE INDEX (`name_order`) ORDER BY `name` ASC LIMIT '.$uri[2].', 50000'),
                                         default => [],
                                     };
                                 }
@@ -178,21 +196,21 @@ class HomeFeeds
                         }
                         if (!empty($links) && is_array($links)) {
                             #Send alternate links. Not using `links()`, because we need to ensure only `alternate` links for the sitemap are sent
-                            $linkheader = [];
+                            $linkHeader = [];
                             #Generate string
                             foreach (['html', 'txt', 'xml'] as $type) {
                                 if ($uri[0] !== $type) {
                                     #Have to use `match` due to need of different MIME types
-                                    $linkheader[] = match($type) {
+                                    $linkHeader[] = match($type) {
                                        'html' => '<'.$baseurl.str_ireplace($uri[0], $type, $_SERVER['REQUEST_URI']).'>; title="HTML Version"; rel="alternate"; type="text/html"',
                                        'txt' => '<'.$baseurl.str_ireplace($uri[0], $type, $_SERVER['REQUEST_URI']).'>; title="Text Version"; rel="alternate"; type="text/plain"',
                                        'xml' => '<'.$baseurl.str_ireplace($uri[0], $type, $_SERVER['REQUEST_URI']).'>; title="XML Version"; rel="alternate"; type="application/xml"',
                                     };
                                 }
                             }
-                            header('Link: '.implode(', ', $linkheader), true);
+                            header('Link: '.implode(', ', $linkHeader), true);
                             #Return sitemap
-                            (new \Simbiat\http20\Sitemap)->sitemap($links, ($uri[0] === 'xml' && $uri[1] === 'index' ? 'index' : $uri[0]), true);
+                            (new Sitemap)->sitemap($links, ($uri[0] === 'xml' && $uri[1] === 'index' ? 'index' : $uri[0]), true);
                         }
                     }
                 }
@@ -203,6 +221,10 @@ class HomeFeeds
     }
 
     #Helper function to generate index page for sitemap
+
+    /**
+     * @throws \Exception
+     */
     private function sitemapIndex(string $baseurl): array
     {
         #Sitemap for general links (non-countable)
@@ -210,7 +232,7 @@ class HomeFeeds
             ['loc'=>$baseurl.'general/', 'name'=>'General links'],
         ];
         #Get countable links
-        $counts = (new \Simbiat\Database\Controller)->selectAll('
+        $counts = (new Controller)->selectAll('
             SELECT \'forum\' AS `link`, \'Forums\' AS `name`, COUNT(*) AS `count` FROM `forum__thread`
             UNION ALL
             SELECT \'bic\' AS `link`, \'Russian Bank Codes\' AS `name`, COUNT(*) AS `count` FROM `bic__list`
@@ -226,13 +248,13 @@ class HomeFeeds
             SELECT \'ff_achievement\' AS `link`, \'FFXIV Achievements\' AS `name`, COUNT(*) AS `count` FROM `ff__achievement`
         ');
         #Generate links
-        foreach ($counts as $linktype) {
-            if ($linktype['count'] <= 50000) {
-                $links[] = ['loc'=>$baseurl.$linktype['link'].'/', 'name'=>$linktype['name']];
+        foreach ($counts as $linkType) {
+            if ($linkType['count'] <= 50000) {
+                $links[] = ['loc'=>$baseurl.$linkType['link'].'/', 'name'=>$linkType['name']];
             } else {
-                $pages = intval(ceil($linktype['count']/50000));
+                $pages = intval(ceil($linkType['count']/50000));
                 for ($page = 1; $page <= $pages; $page++) {
-                    $links[] = ['loc'=>$baseurl.$linktype['link'].'/'.$page.'/', 'name'=>$linktype['name'].', Page '.$page];
+                    $links[] = ['loc'=>$baseurl.$linkType['link'].'/'.$page.'/', 'name'=>$linkType['name'].', Page '.$page];
                 }
             }
         }
@@ -240,4 +262,3 @@ class HomeFeeds
         return $links;
     }
 }
-?>

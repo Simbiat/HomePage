@@ -2,7 +2,24 @@
 declare(strict_types=1);
 namespace Simbiat;
 
-#Some functions in this class can be realized in .htaccess files, but I am implimenting the logic in PHP for more control and less dependencies on server software (not all web servers support htaccess files)
+#Some functions in this class can be realized in .htaccess files, but I am implementing the logic in PHP for more control and less dependencies on server software (not all web servers support htaccess files)
+
+use Simbiat\Database\Config;
+use Simbiat\Database\Controller;
+use Simbiat\Database\Pool;
+use Simbiat\http20\Common;
+use Simbiat\http20\Headers;
+use Simbiat\http20\Meta;
+use Simbiat\http20\Sharing;
+use Simbiat\usercontrol\Bans;
+use Simbiat\usercontrol\Session;
+use Simbiat\usercontrol\Signinup;
+use Twig\Environment;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
+use Twig\Loader\FilesystemLoader;
+
 class HomePage
 {
     #Static value indicating whether this is a live version of the site. It's static in case a function wil be called after initial object was destroyed
@@ -12,9 +29,9 @@ class HomePage
     #Track if DB connection is up
     public static bool $dbup = false;
     #HTMLCache object
-    public static ?\Simbiat\HTMLCache $HTMLCache = NULL;
+    public static ?HTMLCache $HTMLCache = NULL;
     #HTTP headers object
-    public static ?\Simbiat\http20\Headers $headers = NULL;
+    public static ?Headers $headers = NULL;
 
     public function __construct(bool $PROD = false)
     {
@@ -31,7 +48,7 @@ class HomePage
         ini_set('display_errors', strval(intval(!self::$PROD)));
         ini_set('display_startup_errors', strval(intval(!self::$PROD)));
         #Cache headers object
-        self::$headers = new \Simbiat\http20\Headers;
+        self::$headers = new Headers;
     }
 
     public function canonical(): void
@@ -52,7 +69,7 @@ class HomePage
         if (
                 #If HTTPS is not set or is set as 'off' - assume HTTP protocol
                 (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') &&
-                #If the above is true, it does not mean we are on HTTP, because there can be a special rever proxy/balancer case. Thus we check X-FORWARDED-* headers
+                #If the above is true, it does not mean we are on HTTP, because there can be a special reverse proxy/balancer case. Thus we check X-FORWARDED-* headers
                 (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') &&
                 (empty($_SERVER['HTTP_X_FORWARDED_SSL']) || $_SERVER['HTTP_X_FORWARDED_SSL'] === 'off') &&
                 #This one is for Microsoft balancers and apps
@@ -78,8 +95,8 @@ class HomePage
         $_SERVER['REQUEST_URI'] = rawurldecode(trim(trim(trim($_SERVER['REQUEST_URI']), '/')));
     }
 
-    #Function returns version of the file based on numbe rof fiels and date of the newest file
-    public function filesVersion(string|array $files, bool $countfiles = false): string
+    #Function returns version of the file based on number of files and date of the newest file
+    public function filesVersion(string|array $files): string
     {
         #Check if a string
         if (is_string($files)) {
@@ -97,10 +114,10 @@ class HomePage
             } else {
                 #Check if directory
                 if (is_dir($file)) {
-                    $filelist = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
-                    foreach ($filelist as $subfile) {
+                    $fileList = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
+                    foreach ($fileList as $subFile) {
                         #Add date to list
-                        $dates[] = $subfile->getMTime();
+                        $dates[] = $subFile->getMTime();
                     }
                 }
             }
@@ -109,55 +126,61 @@ class HomePage
     }
 
     #Function to process some special files
+
+    /**
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws LoaderError
+     */
     public function filesRequests(string $request): int
     {
         #Remove query string, if present (that is everything after ?)
         $request = preg_replace('/^(.*)(\?.*)?$/', '$1', $request);
         if (preg_match('/^browserconfig\.xml$/i', $request) === 1) {
             #Process MS Tile
-            (new \Simbiat\http20\Meta)->msTile($GLOBALS['siteconfig']['mstile'], [], [], true, true);
+            (new Meta)->msTile($GLOBALS['siteconfig']['mstile'], [], [], true, true);
         } elseif (preg_match('/^js\/\d+\.js$/i', $request) === 1) {
             #Process JS
-            (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['jsdir'], 'js', false, '', 'aggressive');
+            (new Common)->reductor($GLOBALS['siteconfig']['jsdir'], 'js', false, '', 'aggressive');
         } elseif (preg_match('/^css\/\d+\.css$/i', $request) === 1) {
             #Process CSS
-            (new \Simbiat\http20\Common)->reductor($GLOBALS['siteconfig']['cssdir'], 'css', true, '', 'aggressive');
+            (new Common)->reductor($GLOBALS['siteconfig']['cssdir'], 'css', true, '', 'aggressive');
         } elseif (preg_match('/^img\/fftracker\/.*$/i', $request) === 1) {
             #Process FFTracker images
             #Get real path
             if (preg_match('/^(img\/fftracker\/avatar\/)(.+)$/i', $request) === 1) {
-                $imgpath = preg_replace('/^(img\/fftracker\/avatar\/)(.+)/i', 'https://img2.finalfantasyxiv.com/f/$2', $request);
-                (new \Simbiat\http20\Sharing)->proxyFile($imgpath, 'week');
+                $imgPath = preg_replace('/^(img\/fftracker\/avatar\/)(.+)/i', 'https://img2.finalfantasyxiv.com/f/$2', $request);
+                (new Sharing)->proxyFile($imgPath, 'week');
             } elseif (preg_match('/^(img\/fftracker\/icon\/)(.+)$/i', $request) === 1) {
-                $imgpath = preg_replace('/^(img\/fftracker\/icon\/)(.+)/i', 'https://img.finalfantasyxiv.com/lds/pc/global/images/itemicon/$2', $request);
-                (new \Simbiat\http20\Sharing)->proxyFile($imgpath, 'week');
+                $imgPath = preg_replace('/^(img\/fftracker\/icon\/)(.+)/i', 'https://img.finalfantasyxiv.com/lds/pc/global/images/itemicon/$2', $request);
+                (new Sharing)->proxyFile($imgPath, 'week');
             } else {
-                $imgpath = (new \Simbiat\FFTracker)->ImageShow(preg_replace('/^img\/fftracker\//i', '', $request));
+                $imgPath = (new FFTracker)->ImageShow(preg_replace('/^img\/fftracker\//i', '', $request));
                 #Output the image
-                (new \Simbiat\http20\Sharing)->fileEcho($imgpath);
+                (new Sharing)->fileEcho($imgPath);
             }
         } elseif (preg_match('/^(favicon\.ico)|(img\/favicons\/favicon\.ico)$/i', $request) === 1) {
             #Process favicon
-            (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
+            (new Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
         } elseif (preg_match('/^(bic)($|\/.*)/i', $request) === 1) {
             self::$headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.(preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
         } elseif (is_file($GLOBALS['siteconfig']['maindir'].$request)) {
             #Attempt to send the file
             if (preg_match('/^('.implode('|', $GLOBALS['siteconfig']['prohibited']).').*$/i', $request) === 0) {
-                return (new \Simbiat\http20\Sharing)->fileEcho($GLOBALS['siteconfig']['maindir'].$request, allowedMime: $GLOBALS['siteconfig']['allowedMime'], exit: true);
+                return (new Sharing)->fileEcho($GLOBALS['siteconfig']['maindir'].$request, allowedMime: $GLOBALS['siteconfig']['allowedMime'], exit: true);
             } else {
                 return 403;
             }
         } else {
             #Create HTMLCache object to check for cache
-            self::$HTMLCache = (new \Simbiat\HTMLCache($GLOBALS['siteconfig']['cachedir'].'html/'));
+            self::$HTMLCache = (new HTMLCache($GLOBALS['siteconfig']['cachedir'].'html/'));
             #Attempt to use cache
             $output = self::$HTMLCache->get('', true, false);
             if (!empty($output)) {
-                #Cache hit, we need to connect to DB and initiatie session to write data about it
+                #Cache hit, we need to connect to DB and initiate session to write data about it
                 if ($this->dbConnect(true) === true) {
                     #Process POST data if any
-                    (new \Simbiat\HomeRouter)->postProcess();
+                    (new HomeRouter)->postProcess();
                     #Close session right after if it opened
                     if (session_status() === PHP_SESSION_ACTIVE) {
                         session_write_close();
@@ -196,21 +219,27 @@ class HomePage
     }
 
     #Database connection
-    public function dbConnect(bool $extrachecks = false): bool
+
+    /**
+     * @throws SyntaxError
+     * @throws RuntimeError
+     * @throws LoaderError
+     */
+    public function dbConnect(bool $extraChecks = false): bool
     {
         #Check in case we accidentally call this for 2nd time
         if (self::$dbup === false) {
             try {
-                (new \Simbiat\Database\Pool)->openConnection((new \Simbiat\Database\Config)->setUser($GLOBALS['siteconfig']['database']['user'])->setPassword($GLOBALS['siteconfig']['database']['password'])->setDB($GLOBALS['siteconfig']['database']['dbname'])->setOption(\PDO::MYSQL_ATTR_FOUND_ROWS, true)->setOption(\PDO::MYSQL_ATTR_INIT_COMMAND, $GLOBALS['siteconfig']['database']['settings']));
+                (new Pool)->openConnection((new Config)->setUser($GLOBALS['siteconfig']['database']['user'])->setPassword($GLOBALS['siteconfig']['database']['password'])->setDB($GLOBALS['siteconfig']['database']['dbname'])->setOption(\PDO::MYSQL_ATTR_FOUND_ROWS, true)->setOption(\PDO::MYSQL_ATTR_INIT_COMMAND, $GLOBALS['siteconfig']['database']['settings']));
                 self::$dbup = true;
                 #In some cases these extra checks are not required
-                if ($extrachecks === true) {
+                if ($extraChecks === true) {
                     #Check if maintenance
-                    if ((new \Simbiat\Database\Controller)->selectValue('SELECT `value` FROM `sys__settings` WHERE `setting`=\'maintenance\'') == 1) {
+                    if ((new Controller)->selectValue('SELECT `value` FROM `sys__settings` WHERE `setting`=\'maintenance\'') == 1) {
                         $this->twigProc(error: 5032);
                     }
                     #Check if banned
-                    if ((new \Simbiat\usercontrol\Bans)->bannedIP() === true) {
+                    if ((new Bans)->bannedIP() === true) {
                         $this->twigProc(error: 403);
                     }
                 }
@@ -219,29 +248,36 @@ class HomePage
                 return false;
             }
         }
-        if ($extrachecks === true) {
+        if ($extraChecks === true) {
             #Try to start session. It's not critical for the whole site, thus it's ok for it to fail
             if (session_status() !== PHP_SESSION_DISABLED) {
                 #Use custom session handler
-                session_set_save_handler(new \Simbiat\usercontrol\Session, true);
+                session_set_save_handler(new Session, true);
                 session_start();
                 if (!empty($_SESSION['UA']['client']) && preg_match('/^Internet Explorer.*/i', $_SESSION['UA']['client']) === 1) {
                     $this->twigProc(['unsupported' => true, 'client' => $_SESSION['UA']['client']], 418, 'aggressive');
                 }
                 #Process POST data if any
-                (new \Simbiat\HomeRouter)->postProcess();
+                (new HomeRouter)->postProcess();
             }
         }
         return true;
     }
 
     #Twig processing of the generated page
+
+    /**
+     * @throws SyntaxError
+     * @throws RuntimeError
+     * @throws LoaderError
+     * @throws \Exception
+     */
     public function twigProc(array $extraVars = [], ?int $error = NULL, string $cacheStrat = '')
     {
         #Set Twig loader
-        $twigloader = new \Twig\Loader\FilesystemLoader($GLOBALS['siteconfig']['templatesdir']);
+        $twigLoader = new FilesystemLoader($GLOBALS['siteconfig']['templatesdir']);
         #Initiate Twig itself (use caching only for PROD environment)
-        $twig = new \Twig\Environment($twigloader, ['cache' => (self::$PROD ? $GLOBALS['siteconfig']['cachedir'].'/twig' : false)]);
+        $twig = new Environment($twigLoader, ['cache' => (self::$PROD ? $GLOBALS['siteconfig']['cachedir'].'/twig' : false)]);
         #Set default variables
         $twigVars = [
             'domain' => $GLOBALS['siteconfig']['domain'],
@@ -262,12 +298,12 @@ class HomePage
         $twigVars['link_tags'] = self::$headers->links($GLOBALS['siteconfig']['links'], 'head');
         if (self::$dbup) {
             #Update default variables with values from database
-            $twigVars = array_merge($twigVars, (new \Simbiat\Database\Controller)->selectPair('SELECT `setting`, `value` FROM `sys__settings`'));
+            $twigVars = array_merge($twigVars, (new Controller)->selectPair('SELECT `setting`, `value` FROM `sys__settings`'));
             #Get sidebar
-            $twigVars['sidebar']['fflinks'] = (new \Simbiat\FFTracker)->GetLastEntities(5);
+            $twigVars['sidebar']['fflinks'] = (new FFTracker)->GetLastEntities(5);
             #Show login form in sidebar, but only if we do not ahve login/registration page open
             if (preg_match('/^uc\/(registration|register|login|signin|signup|join)$/i', $_SERVER['REQUEST_URI']) !== 1) {
-                $twigVars['user_side_panel'] = (new \Simbiat\usercontrol\Signinup)->form();
+                $twigVars['user_side_panel'] = (new Signinup)->form();
             }
         } else {
             #Enforce 503 error
@@ -305,7 +341,7 @@ class HomePage
         }
         #Limit Ogdesc to 120 characters
         $twigVars['ogdesc'] = mb_substr($twigVars['ogdesc'], 0, 120, 'UTF-8');
-        #Add metatags
+        #Add meta tags
         $this->socialMeta($twigVars);
         #Render page
         $output = $twig->render('main/main.html', $twigVars);
@@ -315,9 +351,9 @@ class HomePage
         }
         #Cache page if cache age is setup
         if (self::$PROD && !empty($twigVars['cache_age']) && is_numeric($twigVars['cache_age'])) {
-            self::$HTMLCache->set($output, '', intval($twigVars['cache_age']), 600, true, true);
+            self::$HTMLCache->set($output, '', intval($twigVars['cache_age']));
         } else {
-            (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
+            (new Common)->zEcho($output, $cacheStrat);
         }
         exit;
     }
@@ -326,7 +362,7 @@ class HomePage
     private function socialMeta(&$twigVars): void
     {
         #Cache object
-        $meta = (new \Simbiat\http20\Meta);
+        $meta = (new Meta);
         #Twitter
         $twigVars['twitter_card'] = $meta->twitter([
             'title' => (empty($twigVars['title']) ? 'Simbiat Software' : $twigVars['title']),
@@ -344,4 +380,3 @@ class HomePage
         $twigVars['ms_tile'] = $meta->msTile($GLOBALS['siteconfig']['mstile'], [], [], false, false);
     }
 }
-?>

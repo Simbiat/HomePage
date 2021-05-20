@@ -2,8 +2,14 @@
 declare(strict_types=1);
 namespace Simbiat;
 
+use Simbiat\http20\Common;
+use Simbiat\http20\Headers;
+
 class HomeApi
 {
+    /**
+     * @throws \Exception
+     */
     public function uriParse(array $uri): array
     {
         #Check if uri is empty
@@ -19,25 +25,25 @@ class HomeApi
                 $data = $this->ffTracker(array_slice($uri, 1));
                 break;
             case 'cron':
-                (new \Simbiat\HomePage)->dbConnect(false);
-                (new \Simbiat\Cron)->process(1);
+                (new HomePage)->dbConnect();
+                (new Cron)->process();
                 exit;
-                break;
             default:
                 #Not supported (yet)
                 $this->apiEcho(httpCode: '404');
                 break;
         }
         #Send data
-        if (!isset($data) || $data === NULL) {
+        if (empty($data)) {
             $this->apiEcho(httpCode: '204');
         } else {
-            $this->apiEcho($data, '200');
+            $this->apiEcho($data);
         }
+        return [];
     }
-    
+
     #Process FFTracker
-    private function ffTracker(array $uri): mixed
+    private function ffTracker(array $uri): string|array|bool
     {
         #Check that next value is appropriate
         if (empty($uri[0])) {
@@ -53,20 +59,20 @@ class HomeApi
             $this->apiEcho(httpCode: '400');
         }
         #Connect to DB
-        if ((new \Simbiat\HomePage)->dbConnect(false) === false) {
+        if ((new HomePage)->dbConnect() === false) {
             $this->apiEcho(httpCode: '503');
         }
         if ($uri[0] === 'register') {
-            $data = (new \Simbiat\FFTracker)->Update('', rawurldecode($uri[1]));
+            $data = (new FFTracker)->Update('', rawurldecode($uri[1]));
         } else {
             #Get data
-            $data = (new \Simbiat\FFTracker)->TrackerGrab($uri[0], rawurldecode($uri[1]));
+            $data = (new FFTracker)->TrackerGrab($uri[0], rawurldecode($uri[1]));
             #Check if empty
             if (empty($data)) {
                 $this->apiEcho(httpCode: '404');
             } else {
                 #Send additional headers
-                $headers = (new \Simbiat\http20\Headers);
+                $headers = (new Headers);
                 $headers->lastModified($data['updated'], true);
                 $headers->links([['rel' => 'alternate', 'type' => 'text/html', 'title' => 'HTML representation', 'href' => '/fftracker/'.$uri[0].'/'.$uri[1]]]);
             }
@@ -74,9 +80,9 @@ class HomeApi
         #Send data
         return $data;
     }
-    
+
     #Process BICTracker
-    private function bicTracker(array $uri): mixed
+    private function bicTracker(array $uri): array|bool|int
     {
         #Check that next value is appropriate
         if (empty($uri[0])) {
@@ -93,17 +99,17 @@ class HomeApi
         }
         if ($uri[0] === 'bic') {
             #Connect to DB
-            if ((new \Simbiat\HomePage)->dbConnect(false)) {
+            if ((new HomePage)->dbConnect()) {
                 #Get data
-                $data = (new \Simbiat\bicXML)->getCurrent(rawurldecode($uri[1]));
+                $data = (new bicXML)->getCurrent(rawurldecode($uri[1]));
                 #Check if empty
                 if (empty($data)) {
                     $this->apiEcho(httpCode: '404');
                 } else {
                     #Send additional headers
-                    $headers = (new \Simbiat\http20\Headers);
+                    $headers = (new Headers);
                     $headers->lastModified(strtotime($data['DT_IZM']), true);
-                    $headers->links([['rel' => 'alternate', 'type' => 'text/html', 'title' => 'HTML representation', 'href' => '/bicktracker/bic/'.$uri[1]]]);
+                    $headers->links([['rel' => 'alternate', 'type' => 'text/html', 'title' => 'HTML representation', 'href' => '/bictracker/bic/'.$uri[1]]]);
                 }
                 #Send data
                 return $data;
@@ -111,22 +117,22 @@ class HomeApi
                 $this->apiEcho(httpCode: '503');
             }
         } elseif ($uri[0] === 'accheck') {
-            return (new \Simbiat\AccountKeying)->accCheck($uri[1], $uri[2]);
+            return (new AccountKeying)->accCheck($uri[1], $uri[2]);
         }
+        return [];
     }
-    
+
     #Function to send the data to client in JSON format with appropriate HTTP status code
-    private function apiEcho(mixed $data = NULL, string $httpCode = '200')
+    private function apiEcho(mixed $data = NULL, string $httpCode = '200'): void
     {
         #Convert data to JSON
         $data = json_encode($data, JSON_PRETTY_PRINT|JSON_INVALID_UTF8_SUBSTITUTE|JSON_UNESCAPED_UNICODE|JSON_PRESERVE_ZERO_FRACTION);
         #Send HTTP code to client
-        (new \Simbiat\http20\Headers)->clientReturn($httpCode, false);
+        (new Headers)->clientReturn($httpCode, false);
         #Send content-type
         header('Content-Type: application/json; charset=utf-8');
         #Send data
-        (new \Simbiat\http20\Common)->zEcho($data);
+        (new Common)->zEcho($data);
         exit;
     }
 }
-?>
