@@ -3,10 +3,10 @@ declare(strict_types=1);
 namespace Simbiat;
 
 use Simbiat\Database\Controller;
-use Simbiat\http20\Atom;
-use Simbiat\http20\Headers;
-use Simbiat\http20\RSS;
-use Simbiat\http20\Sitemap;
+use Simbiat\HTTP20\Atom;
+use Simbiat\HTTP20\Headers;
+use Simbiat\HTTP20\RSS;
+use Simbiat\HTTP20\Sitemap;
 
 class HomeFeeds
 {

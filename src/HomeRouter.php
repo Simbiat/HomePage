@@ -2,8 +2,8 @@
 declare(strict_types=1);
 namespace Simbiat;
 
-use Simbiat\http20\Headers;
-use Simbiat\http20\HTML;
+use Simbiat\HTTP20\Headers;
+use Simbiat\HTTP20\HTML;
 use Simbiat\usercontrol\Signinup;
 
 class HomeRouter

@@ -2,8 +2,8 @@
 declare(strict_types=1);
 namespace Simbiat;
 
-use Simbiat\http20\Common;
-use Simbiat\http20\Sharing;
+use Simbiat\HTTP20\Common;
+use Simbiat\HTTP20\Sharing;
 
 class HomeTests
 {
