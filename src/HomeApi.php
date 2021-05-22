@@ -63,7 +63,7 @@ class HomeApi
             $this->apiEcho(httpCode: '503');
         }
         if ($uri[0] === 'register') {
-            $data = (new FFTracker)->Update('', rawurldecode($uri[1]));
+            $data = (new FFTracker)->Update(rawurldecode($uri[1]), '');
         } else {
             #Get data
             $data = (new FFTracker)->TrackerGrab($uri[0], rawurldecode($uri[1]));
