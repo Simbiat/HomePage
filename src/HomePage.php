@@ -163,7 +163,10 @@ class HomePage
             #Process favicon
             (new Sharing)->fileEcho($GLOBALS['siteconfig']['favicon']);
         } elseif (preg_match('/^(bic)($|\/.*)/i', $request) === 1) {
-            self::$headers->redirect('https://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '').'/'.(preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
+            self::$headers->redirect('https://' . $_SERVER['HTTP_HOST'] . ($_SERVER['SERVER_PORT'] != 443 ? ':' . $_SERVER['SERVER_PORT'] : '') . '/' . (preg_replace('/^(bic)($|\/.*)/i', 'bictracker$2', $request)), true, true, false);
+        } elseif (is_file($GLOBALS['siteconfig']['maindir'].'/static/'.$request)) {
+            #Check if exists in static folder
+            return (new Sharing)->fileEcho($GLOBALS['siteconfig']['maindir'].'/static/'.$request, allowedMime: $GLOBALS['siteconfig']['allowedMime'], exit: true);
         } elseif (is_file($GLOBALS['siteconfig']['maindir'].$request)) {
             #Attempt to send the file
             if (preg_match('/^('.implode('|', $GLOBALS['siteconfig']['prohibited']).').*$/i', $request) === 0) {
@@ -344,7 +347,7 @@ class HomePage
         #Add meta tags
         $this->socialMeta($twigVars);
         #Render page
-        $output = $twig->render('main/main.html', $twigVars);
+        $output = $twig->render('main/main.twig', $twigVars);
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
