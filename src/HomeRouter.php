@@ -72,6 +72,7 @@ class HomeRouter
 
     /**
      * @throws \JsonException
+     * @throws \Exception
      */
     public function fftracker(array $uri): array
     {
@@ -271,6 +272,10 @@ class HomeRouter
     }
 
     #Function to prepare data for BICTracker depending on the URI
+
+    /**
+     * @throws \Exception
+     */
     public function bictracker(array $uri): array
     {
         $headers = (new Headers);
