@@ -68,6 +68,38 @@ class HomeRouter
         return $outputArray;
     }
 
+    #Function to route tests
+    public function tests(array $uri): array
+    {
+        $outputArray = [];
+        #Forbid if on PROD
+        if (HomePage::$PROD === true || empty($uri)) {
+            $outputArray['http_error'] = 403;
+            return $outputArray;
+        }
+        $uri[0] = strtolower($uri[0]);
+        switch ($uri[0]) {
+            #Lodestone tests
+            case 'lodestone':
+                if (empty($uri[1])) {
+                    (new HomeTests)->ffTest(true);
+                    exit;
+                }
+                $uri[1] = strtolower($uri[1]);
+                switch ($uri[1]) {
+                    case 'full':
+                        (new HomeTests)->ffTest(true);
+                        exit;
+                    case 'freecompany':
+                        (new HomeTests)->ffTest(false, $uri[1], $uri[2] ?? '');
+                        exit;
+                }
+                break;
+        }
+        $outputArray['http_error'] = 400;
+        return $outputArray;
+    }
+
     #Function to prepare data for FFTracker depending on the URI
 
     /**
