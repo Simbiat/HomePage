@@ -91,6 +91,9 @@ class HomeRouter
                         (new HomeTests)->ffTest(true);
                         exit;
                     case 'freecompany':
+                    case 'linkshell':
+                    case 'pvpteam':
+                    case 'character':
                         (new HomeTests)->ffTest(false, $uri[1], $uri[2] ?? '');
                         exit;
                 }

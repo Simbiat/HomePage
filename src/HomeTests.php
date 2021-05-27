@@ -8,24 +8,14 @@ use Simbiat\HTTP20\Sharing;
 class HomeTests
 {
     #Function to test Lodestone
-    #Incorporate below ones, when required
+    #Incorporate below ones, when and if required
     #$data = $Lodestone->searchLinkshell()->getResult();
     #$data = $Lodestone->searchDatabase('duty', 2)->getResult();
     #$data = $Lodestone->searchDatabase('achievement', 0, 0, 'hit the floor')->getResult();
-    #$data = $Lodestone->getCharacter('6691027')->getResult();
     #$data = $Lodestone->getCharacterAchievements('6691027', false, 39, true, false)->getResult();
-    #$data = $Lodestone->getCharacter('11164476')->getResult();
-    #$data = $Lodestone->getCharacter('26370203')->getResult();
-    #$data = $Lodestone->getLinkshellMembers('22517998136956039')->getResult();
-    #$data = $Lodestone->getLinkshellMembers('22517998136982037')->getResult();
-    #$data = $Lodestone->getLinkshellMembers('6e125c2e2f7b9e3d4dbfb2ab7190c32c36b930c5')->getResult();
-    #$data = $Lodestone->getPvPTeam('86886213d32985bcb85a157ccaa1fa8d6e7c37c0')->getResult();
-    #$data = $Lodestone->getPvPTeam('c036a9c564d1818cde15fc40db01be8fc4a88612')->getResult();
     #$data = $Lodestone->getWorldStatus(true)->getResult();
     #$data = $Lodestone->getDeepDungeon(2, '', '', '')->getResult();
-    #$data = $Lodestone->getLinkshellMembers('1', 1)->getResult();
-    #$data = $Lodestone->getLinkshellMembers('c4fac4f1cd085af406cc0b0bfe05f4d51e4a2f90')->getResult();
-    public function ffTest(bool $full, string $type, string $id = '')
+    public function ffTest(bool $full, string $type = '', string $id = '')
     {
         if ($full) {
             #Run full test
@@ -35,6 +25,15 @@ class HomeTests
             switch($type) {
                 case 'freecompany':
                     $Lodestone->getFreeCompany($id)->getFreeCompanyMembers($id);
+                    break;
+                case 'linkshell':
+                    $Lodestone->getLinkshellMembers($id);
+                    break;
+                case 'pvpteam':
+                    $Lodestone->getPvPTeam($id);
+                    break;
+                case 'character':
+                    $Lodestone->getCharacter($id);
                     break;
             }
             echo '<pre>'.var_export($Lodestone->getResult(), true).'</pre>';
