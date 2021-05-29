@@ -58,7 +58,7 @@ class HomeApi
         }
         $uri[0] = strtolower($uri[0]);
         #Check if supported
-        if (!in_array($uri[0], ['register', 'achievement', 'character', 'freecompany', 'linkshell', 'pvpteam'])) {
+        if (!in_array($uri[0], ['register', 'achievement', 'character', 'freecompany', 'linkshell', 'crossworldlinkshell', 'pvpteam'])) {
             $this->apiEcho(httpCode: '404');
         }
         #Check that data was provided
@@ -74,13 +74,13 @@ class HomeApi
             $data = $fftracker->Update(rawurldecode($uri[1]), '');
         } else {
             #Handle force update
-            if (in_array($uri[0], ['character', 'freecompany', 'linkshell', 'pvpteam'])) {
+            if (in_array($uri[0], ['character', 'freecompany', 'linkshell', 'crossworldlinkshell', 'pvpteam'])) {
                 #Check if force update was requested
                 if (!empty($uri[2]) && in_array(strtolower($uri[2]), ['force', 'update'])) {
                     #Update the entity
                     $data = $fftracker->Update(rawurldecode($uri[1]), $uri[0]);
                     #If $data value is not a supported one, means that the entity does not exist, so we can exist earlier
-                    if (!in_array($data, ['character', 'freecompany', 'linkshell', 'pvpteam'])) {
+                    if (!in_array($data, ['character', 'freecompany', 'linkshell', 'crossworldlinkshell', 'pvpteam'])) {
                         $this->apiEcho(httpCode: '404');
                     }
                 }
