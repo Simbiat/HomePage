@@ -43,6 +43,13 @@ class HomeApi
     }
 
     #Process FFTracker
+
+    /**
+     * @throws \Twig\Error\SyntaxError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\LoaderError
+     * @throws \Exception
+     */
     private function ffTracker(array $uri): string|array|bool
     {
         #Check that next value is appropriate
@@ -62,11 +69,24 @@ class HomeApi
         if ((new HomePage)->dbConnect() === false) {
             $this->apiEcho(httpCode: '503');
         }
+        $fftracker = (new FFTracker);
         if ($uri[0] === 'register') {
-            $data = (new FFTracker)->Update(rawurldecode($uri[1]), '');
+            $data = $fftracker->Update(rawurldecode($uri[1]), '');
         } else {
+            #Handle force update
+            if (in_array($uri[0], ['character', 'freecompany', 'linkshell', 'pvpteam'])) {
+                #Check if force update was requested
+                if (!empty($uri[2]) && in_array(strtolower($uri[2]), ['force', 'update'])) {
+                    #Update the entity
+                    $data = $fftracker->Update(rawurldecode($uri[1]), $uri[0]);
+                    #If $data value is not a supported one, means that the entity does not exist, so we can exist earlier
+                    if (!in_array($data, ['character', 'freecompany', 'linkshell', 'pvpteam'])) {
+                        $this->apiEcho(httpCode: '404');
+                    }
+                }
+            }
             #Get data
-            $data = (new FFTracker)->TrackerGrab($uri[0], rawurldecode($uri[1]));
+            $data = $fftracker->TrackerGrab($uri[0], rawurldecode($uri[1]));
             #Check if empty
             if (empty($data)) {
                 $this->apiEcho(httpCode: '404');
