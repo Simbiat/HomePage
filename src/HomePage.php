@@ -12,6 +12,7 @@ use Simbiat\HTTP20\Headers;
 use Simbiat\HTTP20\Meta;
 use Simbiat\HTTP20\Sharing;
 use Simbiat\usercontrol\Bans;
+use Simbiat\usercontrol\Security;
 use Simbiat\usercontrol\Session;
 use Simbiat\usercontrol\Signinup;
 use Twig\Environment;
@@ -346,6 +347,8 @@ class HomePage
         $twigVars['ogdesc'] = mb_substr($twigVars['ogdesc'], 0, 120, 'UTF-8');
         #Add meta tags
         $this->socialMeta($twigVars);
+        #Add CSRF Token to meta
+        $twigVars['XCSRFToken'] = $_SESSION['CSRF'] ?? (new Security)->genCSRF();
         #Render page
         $output = $twig->render('main/main.twig', $twigVars);
         #Close session
